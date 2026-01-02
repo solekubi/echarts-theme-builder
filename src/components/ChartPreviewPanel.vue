@@ -1,3 +1,4 @@
+```
 <template>
   <div class="chart-preview">
     <!-- 1. Top Toolbar: Data Actions -->
@@ -11,17 +12,6 @@
         />
       </div>
       <div class="toolbar-actions">
-        <!-- Language Switcher -->
-        <select v-model="locale" class="lang-select">
-          <option
-            v-for="lang in availableLanguages"
-            :key="lang.code"
-            :value="lang.code"
-          >
-            {{ lang.name }}
-          </option>
-        </select>
-
         <input
           type="file"
           ref="fileInputRef"
@@ -61,6 +51,18 @@
         >
           数据/Data
         </van-button>
+
+        <!-- Language Switcher: Reverted to RadioGroup style -->
+        <div class="lang-switcher">
+          <van-radio-group v-model="locale" direction="horizontal">
+            <van-radio
+              v-for="lang in availableLanguages"
+              :key="lang.code"
+              :name="lang.code"
+              >{{ lang.name }}</van-radio
+            >
+          </van-radio-group>
+        </div>
       </div>
     </div>
 
@@ -92,6 +94,53 @@
           </option>
         </select>
       </div>
+
+      <!-- Time Settings (Conditional) -->
+      <template v-if="isTimeAxis">
+        <van-divider vertical />
+
+        <!-- Date Range Filter -->
+        <div class="setting-item">
+          <span class="setting-label">Filter</span>
+          <div class="date-trigger" @click="showDateRangePicker = true">
+            <van-icon name="calendar-o" />
+            <span>{{ dateRangeText }}</span>
+            <van-icon
+              name="arrow-down"
+              v-if="!dateRangeState.selectedStart"
+              style="opacity: 0.5; font-size: 10px; margin-left: 4px"
+            />
+            <van-icon
+              name="clear"
+              v-else
+              @click.stop="resetDateFilter"
+              style="opacity: 0.5; margin-left: 4px"
+            />
+          </div>
+          <van-calendar
+            v-model:show="showDateRangePicker"
+            type="range"
+            :min-date="dateRangeState.minDate"
+            :max-date="dateRangeState.maxDate"
+            color="#1989fa"
+            @confirm="onDateRangeConfirm"
+          />
+        </div>
+
+        <van-divider vertical />
+
+        <!-- Granularity -->
+        <div class="setting-item">
+          <span class="setting-label">Granularity</span>
+          <select v-model="granularity" class="native-select">
+            <option value="raw">Raw (Original)</option>
+            <option value="hour">Hour (Avg)</option>
+            <option value="day">Day (Avg)</option>
+            <option value="month">Month (Avg)</option>
+            <option value="year">Year (Avg)</option>
+          </select>
+        </div>
+      </template>
 
       <van-divider vertical v-if="dataStore.chartType.value !== 'pie'" />
 
@@ -217,6 +266,27 @@ const chartDom = ref<HTMLElement | null>(null);
 let chartInstance: echarts.ECharts | null = null;
 const chartTitle = ref("Chart Title");
 
+// Filter & Granularity State
+const granularity = ref("raw"); // raw, hour, day, month, year
+const showDateRangePicker = ref(false);
+const dateRangeState = reactive({
+  minDate: new Date(2010, 0, 1),
+  maxDate: new Date(2030, 11, 31),
+  selectedStart: null as Date | null,
+  selectedEnd: null as Date | null,
+});
+
+const dateRangeText = computed(() => {
+  if (dateRangeState.selectedStart && dateRangeState.selectedEnd) {
+    const format = (d: Date) =>
+      `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+    return `${format(dateRangeState.selectedStart)} - ${format(
+      dateRangeState.selectedEnd
+    )}`;
+  }
+  return "All Time";
+});
+
 // Methods
 const triggerFileUpload = () => {
   fileInputRef.value?.click();
@@ -250,16 +320,87 @@ const availableSeriesFields = computed(() => {
   );
 });
 
-const previewData = computed(() => {
-  return dataStore.parsedData.value.slice(0, 100); // Limit to 100 rows for view per common table limits
-});
-
 const isTimeAxis = computed(() => {
   if (!hasData.value) return false;
   // Simple check: see if the first few values of X-axis parse as valid dates
   const xField = dataStore.xAxisField.value;
   const sample = dataStore.parsedData.value.slice(0, 5);
   return sample.every((r) => !isNaN(Date.parse(r[xField])));
+});
+
+// Primary Data Processing (Filter + Aggregate)
+const processedData = computed(() => {
+  let data = dataStore.parsedData.value;
+  if (!hasData.value) return [];
+
+  const xField = dataStore.xAxisField.value;
+
+  // 1. Filter by Date Range
+  if (
+    isTimeAxis.value &&
+    dateRangeState.selectedStart &&
+    dateRangeState.selectedEnd
+  ) {
+    const start = dateRangeState.selectedStart.getTime();
+    const end = dateRangeState.selectedEnd.getTime();
+    data = data.filter((r) => {
+      const t = new Date(r[xField]).getTime();
+      return t >= start && t <= end;
+    });
+  }
+
+  // 2. Aggregate by Granularity
+  if (isTimeAxis.value && granularity.value !== "raw") {
+    // Helper to format key
+    const getKey = (dateStr: string) => {
+      const d = new Date(dateStr);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      const h = String(d.getHours()).padStart(2, "0");
+
+      if (granularity.value === "year") return `${y}`;
+      if (granularity.value === "month") return `${y}-${m}`;
+      if (granularity.value === "day") return `${y}-${m}-${day}`;
+      if (granularity.value === "hour") return `${y}-${m}-${day} ${h}:00`;
+      return dateStr;
+    };
+
+    // Grouping
+    const groups: Record<string, any[]> = {};
+    data.forEach((row) => {
+      const key = getKey(row[xField]);
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(row);
+    });
+
+    // Averaging numeric fields
+    return Object.keys(groups)
+      .sort()
+      .map((key) => {
+        const groupRows = groups[key];
+        const result: any = { [xField]: key };
+
+        // Average configured series
+        dataStore.seriesConfigs.value.forEach((series) => {
+          const field = series.field;
+          const sum = groupRows.reduce(
+            (acc, r) => acc + parseFloat(r[field] || 0),
+            0
+          );
+          const avg = sum / groupRows.length;
+          result[field] = parseFloat(avg.toFixed(2));
+        });
+
+        return result;
+      });
+  }
+
+  return data;
+});
+
+const previewData = computed(() => {
+  return processedData.value.slice(0, 100); // Limit to 100 rows for view per common table limits
 });
 
 // Methods
@@ -273,8 +414,40 @@ const handleDataLoad = () => {
   dataStore.processCsv(csvInput.value);
   showPasteDialog.value = false; // Close dialog if open
 
+  // Reset filters
+  dateRangeState.selectedStart = null;
+  dateRangeState.selectedEnd = null;
+  granularity.value = "raw";
+
   // Set default title
   chartTitle.value = "Chart Title";
+
+  // Init date picker range
+  if (isTimeAxis.value && dataStore.parsedData.value.length > 0) {
+    const xField = dataStore.xAxisField.value;
+    const dates = dataStore.parsedData.value
+      .map((r) => new Date(r[xField]).getTime())
+      .filter((t) => !isNaN(t))
+      .sort((a, b) => a - b);
+    if (dates.length > 0) {
+      dateRangeState.minDate = new Date(dates[0]);
+      dateRangeState.maxDate = new Date(dates[dates.length - 1]);
+    }
+  }
+};
+
+const onDateRangeConfirm = (values: Date[]) => {
+  const [start, end] = values;
+  dateRangeState.selectedStart = start;
+  dateRangeState.selectedEnd = end;
+  showDateRangePicker.value = false;
+  // watcher will handle update
+};
+
+const resetDateFilter = () => {
+  dateRangeState.selectedStart = null;
+  dateRangeState.selectedEnd = null;
+  // watcher will handle update
 };
 
 const isSeriesSelected = (field: string) => {
@@ -312,13 +485,11 @@ const toggleAxis = (field: string) => {
 // Chart Generation Logic
 const getChartOption = () => {
   const d = dataStore;
-  if (d.parsedData.value.length === 0) return {};
+  const displayData = processedData.value;
+
+  if (displayData.length === 0) return {};
 
   const isPie = d.chartType.value === "pie";
-
-  // Filter Data based on Date Range
-  let displayData = d.parsedData.value;
-  // Note: Date filtering is now handled by ECharts DataZoom, so we pass full data
 
   // Base Option
   const option: any = {
@@ -366,7 +537,7 @@ const getChartOption = () => {
   } else {
     option.xAxis = {
       type: "category", // Even for time, category is often safer for CSV unless fully parsed times
-      data: displayData.map((row) => row[d.xAxisField.value]),
+      data: displayData.map((row: any) => row[d.xAxisField.value]),
     };
 
     // Check for Dual Axis
@@ -390,7 +561,7 @@ const getChartOption = () => {
       type: d.chartType.value,
       name: s.name,
       yAxisIndex: s.yAxisIndex,
-      data: displayData.map((row) => row[s.field]),
+      data: displayData.map((row: any) => row[s.field]),
     }));
   }
 
@@ -463,10 +634,14 @@ function handleResize() {
 // Watch data changes
 watch(
   [
+    processedData,
     dataStore.parsedData,
     dataStore.chartType,
     dataStore.xAxisField,
     dataStore.seriesConfigs,
+    granularity, // Watch granularity for immediate chart update
+    () => dateRangeState.selectedStart, // Watch date range for immediate chart update
+    () => dateRangeState.selectedEnd, // Watch date range for immediate chart update
   ],
   debouncedUpdate,
   { deep: true }
@@ -614,24 +789,29 @@ watch(chartTitle, debouncedUpdate);
   background: rgba(255, 255, 255, 0.4);
 }
 
-.axis-toggle:hover {
-  background: rgba(255, 255, 255, 0.4);
-}
-
-.lang-select {
+.date-trigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   padding: 4px 8px;
   border: 1px solid #dcdee0;
   border-radius: 4px;
-  background-color: #f7f8fa;
+  background-color: #fff;
   font-size: 13px;
   color: #323233;
-  outline: none;
   cursor: pointer;
-  margin-right: 8px;
+  min-width: 120px;
+  justify-content: space-between;
 }
 
-.lang-select:hover {
-  background-color: #ebedf0;
+.date-trigger:hover {
+  border-color: var(--van-primary-color);
+}
+
+.lang-switcher {
+  display: flex;
+  align-items: center;
+  margin-left: 10px;
 }
 
 /* 3. Chart Content */
