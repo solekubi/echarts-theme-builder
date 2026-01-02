@@ -103,20 +103,38 @@
         <div class="setting-item">
           <span class="setting-label">{{ $t("preview.filter") }}</span>
           <div class="date-inputs">
-            <input
-              type="date"
-              v-model="dateInputState.start"
-              class="date-input native-input"
-            />
-            <span class="date-separator">-</span>
-            <input
-              type="date"
-              v-model="dateInputState.end"
-              class="date-input native-input"
-            />
+            <VDatePicker
+              v-model.range="dateRange"
+              :min-date="calendarMinDate"
+              :max-date="calendarMaxDate"
+              mode="date"
+              :popover="{ visibility: 'click' }"
+              color="blue"
+              is-dark="system"
+            >
+              <template #default="{ inputValue, inputEvents }">
+                <div class="date-picker-inputs">
+                  <input
+                    :value="inputValue.start"
+                    v-on="inputEvents.start"
+                    placeholder="Start Date"
+                    class="date-input"
+                    readonly
+                  />
+                  <span class="date-separator">~</span>
+                  <input
+                    :value="inputValue.end"
+                    v-on="inputEvents.end"
+                    placeholder="End Date"
+                    class="date-input"
+                    readonly
+                  />
+                </div>
+              </template>
+            </VDatePicker>
             <van-icon
               name="clear"
-              v-if="dateInputState.start || dateInputState.end"
+              v-if="dateRange.start || dateRange.end"
               @click="resetDateInputs"
               class="clear-icon"
             />
@@ -251,6 +269,8 @@ import { useGlobalDataStore, type SeriesConfig } from "../stores/data"; // Impor
 // ... removed unused useI18n ...
 
 import { useLocalization } from "../composables/useLocalization";
+import { DatePicker as VDatePicker } from "v-calendar";
+import "v-calendar/style.css";
 
 // Store interaction
 const themeStore = useThemeStore();
@@ -273,11 +293,41 @@ const chartTitle = ref("Chart Title");
 // Filter & Granularity State
 const granularity = ref("raw"); // raw, hour, day, month, year
 
-// Date Input State (Strings YYYY-MM-DD for input type="date")
+// Date Range State for VCalendar (uses Date objects)
+const dateRange = ref<any>({
+  start: undefined,
+  end: undefined,
+});
+
+// Calendar min/max dates (will be updated based on data)
+const calendarMinDate = ref<Date>(new Date(2020, 0, 1));
+const calendarMaxDate = ref<Date>(new Date(2030, 11, 31));
+
+// Legacy date state for internal use (YYYY-MM-DD strings)
 const dateInputState = reactive({
   start: "",
   end: "",
 });
+
+// Sync dateRange with dateInputState
+watch(
+  dateRange,
+  (newRange) => {
+    if (newRange.start && newRange.end) {
+      dateInputState.start = formatDateToString(newRange.start);
+      dateInputState.end = formatDateToString(newRange.end);
+    }
+  },
+  { deep: true }
+);
+
+// Helper to format Date object to YYYY-MM-DD string
+const formatDateToString = (date: Date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
 
 // Methods
 const triggerFileUpload = () => {
@@ -445,6 +495,7 @@ const handleDataLoad = () => {
 };
 
 const resetDateInputs = () => {
+  dateRange.value = { start: undefined, end: undefined };
   dateInputState.start = "";
   dateInputState.end = "";
 };
@@ -480,12 +531,22 @@ watch(
           const maxD = new Date(maxTs);
           const minD = new Date(minTs);
 
+          // Update calendar min/max dates to match data range
+          calendarMinDate.value = minD;
+          calendarMaxDate.value = maxD;
+
           // Default range: Last 1 month
           const startDate = new Date(maxD);
           startDate.setMonth(startDate.getMonth() - 1);
 
           // Ensure start is not before actual min
           const finalStart = startDate.getTime() < minTs ? minD : startDate;
+
+          // Update VCalendar dateRange (Date objects)
+          dateRange.value = {
+            start: finalStart,
+            end: maxD,
+          };
 
           // Helper: Format to local YYYY-MM-DD
           const toLocalIsoDate = (d: Date) => {
@@ -909,6 +970,44 @@ watch(chartTitle, debouncedUpdate);
 
 .clear-icon:hover {
   color: #323233;
+}
+
+/* VCalendar Date Picker Styles */
+.date-picker-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid #dcdee0;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.date-picker-inputs:hover {
+  border-color: var(--van-primary-color);
+}
+
+.date-picker-inputs .date-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 2px 4px;
+  font-size: 13px;
+  color: #323233;
+  cursor: pointer;
+  background: transparent;
+  min-width: 90px;
+}
+
+.date-picker-inputs .date-input::placeholder {
+  color: #969799;
+}
+
+.date-picker-inputs .date-separator {
+  color: #969799;
+  font-weight: 500;
 }
 
 .lang-switcher {

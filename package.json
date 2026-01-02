@@ -15,6 +15,7 @@
     "@types/papaparse": "^5.5.2",
     "colorthief": "^2.6.0",
     "papaparse": "^5.5.3",
+    "v-calendar": "^3.1.2",
     "vant": "^4.9.21",
     "vue": "^3.5.24",
     "vue-i18n": "^9.14.5",
