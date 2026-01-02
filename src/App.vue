@@ -29,23 +29,6 @@ const chartPreviewRef = useTemplateRef("chartPreviewRef");
 
 <template>
   <div class="theme-builder-body">
-    <!-- Language Selector - only shown in dev/preview mode -->
-    <div v-if="showLanguageSelector" class="language-selector">
-      <VanRadioGroup
-        v-model="currentLang"
-        direction="horizontal"
-        @change="onLanguageChange"
-      >
-        <VanRadio
-          v-for="locale in availableLanguages"
-          :name="locale.code"
-          :key="locale.code"
-        >
-          {{ locale.name }}
-        </VanRadio>
-      </VanRadioGroup>
-    </div>
-
     <div class="container-fluid" id="content">
       <VanRow class="row-container" :gutter="0">
         <VanCol span="6" class="theme-config">

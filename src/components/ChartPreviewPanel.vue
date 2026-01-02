@@ -11,6 +11,17 @@
         />
       </div>
       <div class="toolbar-actions">
+        <!-- Language Switcher -->
+        <select v-model="locale" class="lang-select">
+          <option
+            v-for="lang in availableLanguages"
+            :key="lang.code"
+            :value="lang.code"
+          >
+            {{ lang.name }}
+          </option>
+        </select>
+
         <input
           type="file"
           ref="fileInputRef"
@@ -81,28 +92,6 @@
           </option>
         </select>
       </div>
-
-      <!-- Time Range (Conditional) -->
-      <template v-if="isTimeAxis">
-        <van-divider vertical />
-        <div class="setting-item">
-          <span class="setting-label">Range</span>
-          <van-button
-            size="mini"
-            icon="calendar-o"
-            @click="showDateRangePicker = true"
-          >
-            {{ dateRangeText }}
-          </van-button>
-          <van-calendar
-            v-model:show="showDateRangePicker"
-            type="range"
-            :min-date="dateRangeState.minDate"
-            :max-date="dateRangeState.maxDate"
-            @confirm="onDateRangeConfirm"
-          />
-        </div>
-      </template>
 
       <van-divider vertical v-if="dataStore.chartType.value !== 'pie'" />
 
@@ -211,10 +200,12 @@ import { useThemeStore } from "../stores/theme";
 import { useGlobalDataStore } from "../stores/data";
 import { useI18n } from "vue-i18n";
 
+import { useLocalization } from "../composables/useLocalization";
+
 // Store interaction
 const themeStore = useThemeStore();
 const dataStore = useGlobalDataStore();
-const { locale } = useI18n();
+const { locale, availableLanguages } = useLocalization();
 
 // UI State
 const activeNames = ref(["data"]);
@@ -225,24 +216,6 @@ const fileInputRef = ref<HTMLInputElement | null>(null);
 const chartDom = ref<HTMLElement | null>(null);
 let chartInstance: echarts.ECharts | null = null;
 const chartTitle = ref("Chart Title");
-
-// Date Range Picker
-const showDateRangePicker = ref(false);
-const dateRangeState = reactive({
-  minDate: new Date(2010, 0, 1),
-  maxDate: new Date(2030, 11, 31),
-  selectedStart: null as Date | null,
-  selectedEnd: null as Date | null,
-});
-const dateRangeText = computed(() => {
-  if (dateRangeState.selectedStart && dateRangeState.selectedEnd) {
-    const format = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`;
-    return `${format(dateRangeState.selectedStart)} - ${format(
-      dateRangeState.selectedEnd
-    )}`;
-  }
-  return "All Time";
-});
 
 // Methods
 const triggerFileUpload = () => {
@@ -299,33 +272,9 @@ const loadDemo = () => {
 const handleDataLoad = () => {
   dataStore.processCsv(csvInput.value);
   showPasteDialog.value = false; // Close dialog if open
-  // Reset filters
-  dateRangeState.selectedStart = null;
-  dateRangeState.selectedEnd = null;
 
   // Set default title
   chartTitle.value = "Chart Title";
-
-  if (isTimeAxis.value && dataStore.parsedData.value.length > 0) {
-    const xField = dataStore.xAxisField.value;
-    // Try to determine min/max for picker limits
-    const dates = dataStore.parsedData.value
-      .map((r) => new Date(r[xField]).getTime())
-      .filter((t) => !isNaN(t))
-      .sort((a, b) => a - b);
-    if (dates.length > 0) {
-      dateRangeState.minDate = new Date(dates[0]);
-      dateRangeState.maxDate = new Date(dates[dates.length - 1]);
-    }
-  }
-};
-
-const onDateRangeConfirm = (values: Date[]) => {
-  const [start, end] = values;
-  dateRangeState.selectedStart = start;
-  dateRangeState.selectedEnd = end;
-  showDateRangePicker.value = false;
-  debouncedUpdate();
 };
 
 const isSeriesSelected = (field: string) => {
@@ -369,25 +318,13 @@ const getChartOption = () => {
 
   // Filter Data based on Date Range
   let displayData = d.parsedData.value;
-  if (
-    isTimeAxis.value &&
-    dateRangeState.selectedStart &&
-    dateRangeState.selectedEnd
-  ) {
-    const xField = d.xAxisField.value;
-    const start = dateRangeState.selectedStart.getTime();
-    const end = dateRangeState.selectedEnd.getTime();
-    displayData = displayData.filter((r) => {
-      const t = new Date(r[xField]).getTime();
-      return t >= start && t <= end;
-    });
-  }
+  // Note: Date filtering is now handled by ECharts DataZoom, so we pass full data
 
   // Base Option
   const option: any = {
     title: {
       text: chartTitle.value,
-      left: "center", // Keep title centered usually looks better, user asked for customizations
+      left: "center",
       top: 10,
     },
     tooltip: {
@@ -395,17 +332,19 @@ const getChartOption = () => {
       axisPointer: { type: "shadow" }, // Better for mixed charts
     },
     legend: {
-      top: 40, // Move legend down to avoid title overlap
-      left: "left", // Requested: legend to top-left
+      top: 45,
+      left: 0, // Top-left as requested, left 0 works better if grid is pushed down
       type: "scroll",
+      width: "100%", // Scrollable full width
     },
     grid: {
       left: "3%",
       right: "5%",
-      bottom: "3%",
-      top: 80, // More space for title and legend
+      bottom: "10%", // Give space for dataZoom
+      top: 100, // Clear title and legend
       containLabel: true,
     },
+    dataZoom: [{ type: "inside" }, { type: "slider", bottom: 10 }],
     dataset: {
       source: displayData,
     },
@@ -414,6 +353,7 @@ const getChartOption = () => {
   if (isPie) {
     option.xAxis = undefined;
     option.yAxis = undefined;
+    option.dataZoom = undefined; // No zoom for pie
     option.series = d.seriesConfigs.value.map((s) => ({
       type: "pie",
       name: s.name,
@@ -430,13 +370,18 @@ const getChartOption = () => {
     };
 
     // Check for Dual Axis
-    const hasRightAxis = d.seriesConfigs.value.some((s) => s.yAxisIndex === 1);
+    const leftSeries = d.seriesConfigs.value.filter((s) => s.yAxisIndex === 0);
+    const rightSeries = d.seriesConfigs.value.filter((s) => s.yAxisIndex === 1);
 
-    option.yAxis = [{ type: "value", name: "Left Axis" }];
-    if (hasRightAxis) {
+    // Dynamic Axis Naming
+    const leftName = leftSeries.map((s) => s.name).join(" / ");
+    const rightName = rightSeries.map((s) => s.name).join(" / ");
+
+    option.yAxis = [{ type: "value", name: leftName || "Value" }];
+    if (rightSeries.length > 0) {
       option.yAxis.push({
         type: "value",
-        name: "Right Axis",
+        name: rightName,
         position: "right",
       });
     }
@@ -529,6 +474,9 @@ watch(
 
 // Watch theme changes (The parent usually calls updateCharts, but we watch just in case)
 watch(() => themeStore.theme, debouncedUpdate, { deep: true });
+
+// Watch title for real-time updates
+watch(chartTitle, debouncedUpdate);
 </script>
 
 <style scoped>
@@ -664,6 +612,26 @@ watch(() => themeStore.theme, debouncedUpdate, { deep: true });
 
 .axis-toggle:hover {
   background: rgba(255, 255, 255, 0.4);
+}
+
+.axis-toggle:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.lang-select {
+  padding: 4px 8px;
+  border: 1px solid #dcdee0;
+  border-radius: 4px;
+  background-color: #f7f8fa;
+  font-size: 13px;
+  color: #323233;
+  outline: none;
+  cursor: pointer;
+  margin-right: 8px;
+}
+
+.lang-select:hover {
+  background-color: #ebedf0;
 }
 
 /* 3. Chart Content */
