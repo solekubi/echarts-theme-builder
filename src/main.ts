@@ -15,7 +15,8 @@ import {
   Divider,
   Switch,
   Cell,
-  Dialog
+  Dialog,
+  Calendar
 } from 'vant'
 import App from './App.vue'
 import i18n from './i18n'
@@ -37,4 +38,5 @@ app.use(Divider)
 app.use(Switch)
 app.use(Cell)
 app.use(Dialog)
+app.use(Calendar)
 app.mount('#theme-builder-app')

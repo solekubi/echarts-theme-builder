@@ -1,32 +1,46 @@
 <script setup lang="ts">
-import { ref, useTemplateRef } from 'vue'
+import { ref, useTemplateRef } from "vue";
 // Simple fixed sidebar layout without responsive design
-import ChartPreviewPanel from './components/ChartPreviewPanel.vue'
-import ThemePanel from './components/ThemePanel.vue'
-import { useLocalization } from './composables/useLocalization'
-import { RadioGroup as VanRadioGroup, Radio as VanRadio, Row as VanRow, Col as VanCol } from 'vant'
+import ChartPreviewPanel from "./components/ChartPreviewPanel.vue";
+import ThemePanel from "./components/ThemePanel.vue";
+import { useLocalization } from "./composables/useLocalization";
+import {
+  RadioGroup as VanRadioGroup,
+  Radio as VanRadio,
+  Row as VanRow,
+  Col as VanCol,
+} from "vant";
 
 // Set up language control
-const { switchLanguage, currentLanguage, availableLanguages } = useLocalization()
-const currentLang = ref(currentLanguage)
+const { switchLanguage, currentLanguage, availableLanguages } =
+  useLocalization();
+const currentLang = ref(currentLanguage);
 // Only show language selector in dev/preview mode
 // Use import.meta.env.DEV to only show in development mode
-const showLanguageSelector = import.meta.env.VITE_SHOW_LANGUAGE_SELECTOR
+const showLanguageSelector = import.meta.env.VITE_SHOW_LANGUAGE_SELECTOR;
 
 const onLanguageChange = (lang: string) => {
-  switchLanguage(lang)
-}
+  switchLanguage(lang);
+};
 
 // Get reference to chart preview panel
-const chartPreviewRef = useTemplateRef('chartPreviewRef')
+const chartPreviewRef = useTemplateRef("chartPreviewRef");
 </script>
 
 <template>
   <div class="theme-builder-body">
     <!-- Language Selector - only shown in dev/preview mode -->
     <div v-if="showLanguageSelector" class="language-selector">
-      <VanRadioGroup v-model="currentLang" direction="horizontal" @change="onLanguageChange">
-        <VanRadio v-for="locale in availableLanguages" :name="locale.code" :key="locale.code">
+      <VanRadioGroup
+        v-model="currentLang"
+        direction="horizontal"
+        @change="onLanguageChange"
+      >
+        <VanRadio
+          v-for="locale in availableLanguages"
+          :name="locale.code"
+          :key="locale.code"
+        >
           {{ locale.name }}
         </VanRadio>
       </VanRadioGroup>
@@ -57,11 +71,15 @@ const chartPreviewRef = useTemplateRef('chartPreviewRef')
 
 .language-selector {
   position: absolute;
-  top: 10px;
+  bottom: 20px;
   right: 20px;
+  top: auto;
   z-index: 1000;
   background-color: rgba(255, 255, 255, 0.9);
-  padding: 15px;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid #ebedf0;
 }
 
 .container-fluid {

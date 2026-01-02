@@ -1,171 +1,211 @@
 <template>
   <div class="chart-preview">
-    <!-- Configuration Panel -->
-    <div class="config-panel">
-      <van-collapse v-model="activeNames">
-        <van-collapse-item title="数据配置 / Data Configuration" name="data">
-          <!-- Data Visibility Control -->
-          <!-- Data Visibility Control -->
-          <div class="data-controls">
-            <van-button
-              size="small"
-              icon="eye-o"
-              block
-              @click="showDataDialog = true"
-            >
-              查看源数据 / View Source Data
-            </van-button>
-          </div>
+    <!-- 1. Top Toolbar: Data Actions -->
+    <div class="preview-toolbar">
+      <div class="toolbar-title">
+        <van-field
+          v-model="chartTitle"
+          :placeholder="$t('preview.chartPreview')"
+          class="chart-title-input"
+          :border="false"
+        />
+      </div>
+      <div class="toolbar-actions">
+        <input
+          type="file"
+          ref="fileInputRef"
+          accept=".csv"
+          style="display: none"
+          @change="handleFileUpload"
+        />
+        <van-button
+          size="small"
+          icon="down"
+          plain
+          type="primary"
+          @click="triggerFileUpload"
+          >导入/Import</van-button
+        >
+        <van-button
+          size="small"
+          icon="edit"
+          plain
+          type="primary"
+          @click="showPasteDialog = true"
+          >粘贴/Paste</van-button
+        >
+        <van-button
+          size="small"
+          icon="play-circle-o"
+          plain
+          type="success"
+          @click="loadDemo"
+          >示例/Demo</van-button
+        >
+        <van-button
+          size="small"
+          icon="eye-o"
+          @click="showDataDialog = true"
+          :disabled="!hasData"
+        >
+          数据/Data
+        </van-button>
+      </div>
+    </div>
 
-          <van-dialog
-            v-model:show="showDataDialog"
-            title="数据预览 / Data Preview"
-            width="80%"
-            :showConfirmButton="false"
-            closeOnClickOverlay
+    <!-- 2. Settings Bar (Visible only when data exists) -->
+    <div class="settings-bar" v-if="hasData">
+      <!-- Chart Type -->
+      <div class="setting-item">
+        <span class="setting-label">Type</span>
+        <van-radio-group
+          v-model="dataStore.chartType.value"
+          direction="horizontal"
+          class="compact-radio"
+        >
+          <van-radio name="line">Line</van-radio>
+          <van-radio name="bar">Bar</van-radio>
+          <van-radio name="scatter">Scatter</van-radio>
+          <van-radio name="pie">Pie</van-radio>
+        </van-radio-group>
+      </div>
+
+      <van-divider vertical />
+
+      <!-- X-Axis -->
+      <div class="setting-item" v-if="dataStore.chartType.value !== 'pie'">
+        <span class="setting-label">X-Axis</span>
+        <select v-model="dataStore.xAxisField.value" class="native-select">
+          <option v-for="h in dataStore.headers.value" :key="h" :value="h">
+            {{ h }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Time Range (Conditional) -->
+      <template v-if="isTimeAxis">
+        <van-divider vertical />
+        <div class="setting-item">
+          <span class="setting-label">Range</span>
+          <van-button
+            size="mini"
+            icon="calendar-o"
+            @click="showDateRangePicker = true"
           >
-            <div class="data-table-container">
-              <table
-                class="data-table"
-                v-if="dataStore.parsedData.value.length"
-              >
-                <thead>
-                  <tr>
-                    <th v-for="h in dataStore.headers.value" :key="h">
-                      {{ h }}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <!-- Only show first 500 rows for performance if needed, but requirements imply full preview or at least table view -->
-                  <tr v-for="(row, i) in previewData" :key="i">
-                    <td v-for="h in dataStore.headers.value" :key="h + i">
-                      {{ row[h] }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-              <div v-else class="no-data">无数据 / No Data</div>
-            </div>
-          </van-dialog>
-
-          <!-- Data Input -->
-          <van-field
-            v-if="showCsvPreview"
-            v-model="csvInput"
-            rows="3"
-            autosize
-            label="CSV Data"
-            type="textarea"
-            placeholder="Paste CSV here (Header required)"
+            {{ dateRangeText }}
+          </van-button>
+          <van-calendar
+            v-model:show="showDateRangePicker"
+            type="range"
+            :min-date="dateRangeState.minDate"
+            :max-date="dateRangeState.maxDate"
+            @confirm="onDateRangeConfirm"
           />
-          <div class="action-buttons">
-            <input
-              type="file"
-              ref="fileInputRef"
-              accept=".csv"
-              style="display: none"
-              @change="handleFileUpload"
-            />
-            <van-button size="small" type="primary" @click="triggerFileUpload">
-              导入 CSV / Import CSV
-            </van-button>
-            <van-button
-              size="small"
-              plain
-              type="primary"
-              @click="handleDataLoad"
-              >解析数据 / Parse CSV</van-button
+        </div>
+      </template>
+
+      <van-divider vertical v-if="dataStore.chartType.value !== 'pie'" />
+
+      <!-- Series Config -->
+      <div class="setting-item series-setting">
+        <span class="setting-label">Series</span>
+        <div class="series-tags">
+          <div
+            v-for="h in availableSeriesFields"
+            :key="h"
+            class="series-tag"
+            :class="{ active: isSeriesSelected(h) }"
+            @click="toggleSeries(h, !isSeriesSelected(h))"
+          >
+            {{ h }}
+            <span
+              v-if="isSeriesSelected(h) && dataStore.chartType.value !== 'pie'"
+              class="axis-toggle"
+              @click.stop="toggleAxis(h)"
+              title="Toggle Axis (L/R)"
             >
-            <van-button size="small" plain type="primary" @click="loadDemo"
-              >加载示例 / Load Demo</van-button
-            >
+              {{ getSeriesYAxis(h) === 1 ? "R" : "L" }}
+            </span>
           </div>
-
-          <div v-if="dataStore.headers.value.length > 0" class="mapping-config">
-            <van-divider>图表设置 / Chart Settings</van-divider>
-
-            <!-- Global Chart Type -->
-            <div class="config-row">
-              <span class="label">图表类型:</span>
-              <van-radio-group
-                v-model="dataStore.chartType.value"
-                direction="horizontal"
-              >
-                <van-radio name="line">折线图</van-radio>
-                <van-radio name="bar">柱状图</van-radio>
-                <van-radio name="scatter">散点图</van-radio>
-                <van-radio name="pie">饼图</van-radio>
-              </van-radio-group>
-            </div>
-
-            <!-- X Axis -->
-            <div class="config-row" v-if="dataStore.chartType.value !== 'pie'">
-              <span class="label">X轴字段:</span>
-              <select
-                v-model="dataStore.xAxisField.value"
-                class="native-select"
-              >
-                <option
-                  v-for="h in dataStore.headers.value"
-                  :key="h"
-                  :value="h"
-                >
-                  {{ h }}
-                </option>
-              </select>
-            </div>
-
-            <!-- Series Selection -->
-            <div class="config-row series-config">
-              <span class="label">系列 (Series):</span>
-              <div class="series-list">
-                <div
-                  v-for="h in availableSeriesFields"
-                  :key="h"
-                  class="series-item"
-                >
-                  <div class="series-item-header">
-                    <input
-                      type="checkbox"
-                      :checked="isSeriesSelected(h)"
-                      @change="(e) => toggleSeries(h, (e.target as HTMLInputElement).checked)"
-                    />
-                    <span>{{ h }}</span>
-                  </div>
-
-                  <div
-                    v-if="
-                      isSeriesSelected(h) && dataStore.chartType.value !== 'pie'
-                    "
-                    class="series-options"
-                  >
-                    <label>
-                      <input
-                        type="checkbox"
-                        :checked="getSeriesYAxis(h) === 1"
-                        @change="(e) => updateSeriesAxis(h, (e.target as HTMLInputElement).checked)"
-                      />
-                      右轴 (Right Axis)
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </van-collapse-item>
-      </van-collapse>
+        </div>
+      </div>
     </div>
 
-    <!-- Chart Display -->
-    <div class="chart-wrapper">
-      <div ref="chartDom" class="chart-container"></div>
+    <!-- 3. Chart Content -->
+    <div class="chart-content">
+      <div v-if="!hasData" class="empty-state">
+        <van-icon name="chart-trending-o" class="empty-icon" />
+        <p>请导入或粘贴 CSV 数据以开始预览</p>
+        <p class="sub-text">Please import or paste CSV data to preview</p>
+        <van-button type="primary" size="small" @click="loadDemo"
+          >加载示例数据</van-button
+        >
+      </div>
+      <div v-else class="chart-card">
+        <div ref="chartDom" class="chart-render-area"></div>
+      </div>
     </div>
+
+    <!-- Dialogs -->
+    <!-- View Data Dialog -->
+    <van-dialog
+      v-model:show="showDataDialog"
+      title="数据预览 / Data Preview"
+      width="80%"
+      :showConfirmButton="false"
+      closeOnClickOverlay
+    >
+      <div class="data-table-container">
+        <table class="data-table" v-if="hasData">
+          <thead>
+            <tr>
+              <th v-for="h in dataStore.headers.value" :key="h">{{ h }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(row, i) in previewData" :key="i">
+              <td v-for="h in dataStore.headers.value" :key="h + i">
+                {{ row[h] }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div v-else class="no-data">无数据 / No Data</div>
+      </div>
+    </van-dialog>
+
+    <!-- Paste Data Dialog -->
+    <van-dialog
+      v-model:show="showPasteDialog"
+      title="粘贴 CSV 数据 / Paste CSV"
+      show-cancel-button
+      confirm-button-text="解析 / Parse"
+      @confirm="handleDataLoad"
+    >
+      <div class="paste-container">
+        <van-field
+          v-model="csvInput"
+          rows="10"
+          autosize
+          type="textarea"
+          placeholder="Paste your CSV content here..."
+          class="paste-textarea"
+        />
+      </div>
+    </van-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, markRaw, computed } from "vue";
+import {
+  ref,
+  onMounted,
+  onUnmounted,
+  watch,
+  markRaw,
+  computed,
+  reactive,
+} from "vue";
 import * as echarts from "echarts";
 import { useThemeStore } from "../stores/theme";
 import { useGlobalDataStore } from "../stores/data";
@@ -179,15 +219,30 @@ const { locale } = useI18n();
 // UI State
 const activeNames = ref(["data"]);
 const csvInput = ref("");
-const showCsvPreview = ref(false); // Kept for legacy support if needed, but UI replaced
 const showDataDialog = ref(false);
+const showPasteDialog = ref(false);
 const fileInputRef = ref<HTMLInputElement | null>(null);
-
-const previewData = computed(() => {
-  return dataStore.parsedData.value.slice(0, 100); // Limit to 100 rows for view per common table limits
-});
 const chartDom = ref<HTMLElement | null>(null);
 let chartInstance: echarts.ECharts | null = null;
+const chartTitle = ref("Chart Title");
+
+// Date Range Picker
+const showDateRangePicker = ref(false);
+const dateRangeState = reactive({
+  minDate: new Date(2010, 0, 1),
+  maxDate: new Date(2030, 11, 31),
+  selectedStart: null as Date | null,
+  selectedEnd: null as Date | null,
+});
+const dateRangeText = computed(() => {
+  if (dateRangeState.selectedStart && dateRangeState.selectedEnd) {
+    const format = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`;
+    return `${format(dateRangeState.selectedStart)} - ${format(
+      dateRangeState.selectedEnd
+    )}`;
+  }
+  return "All Time";
+});
 
 // Methods
 const triggerFileUpload = () => {
@@ -205,12 +260,6 @@ const handleFileUpload = (event: Event) => {
         csvInput.value = content;
         // Auto process
         handleDataLoad();
-        // Hide preview if too large
-        if (content.split("\n").length > 50) {
-          showCsvPreview.value = false;
-        } else {
-          showCsvPreview.value = true;
-        }
       }
     };
     reader.readAsText(file);
@@ -220,22 +269,63 @@ const handleFileUpload = (event: Event) => {
 };
 
 // Computed
+const hasData = computed(() => dataStore.parsedData.value.length > 0);
+
 const availableSeriesFields = computed(() => {
   return dataStore.headers.value.filter(
     (h) => h !== dataStore.xAxisField.value
   );
 });
 
+const previewData = computed(() => {
+  return dataStore.parsedData.value.slice(0, 100); // Limit to 100 rows for view per common table limits
+});
+
+const isTimeAxis = computed(() => {
+  if (!hasData.value) return false;
+  // Simple check: see if the first few values of X-axis parse as valid dates
+  const xField = dataStore.xAxisField.value;
+  const sample = dataStore.parsedData.value.slice(0, 5);
+  return sample.every((r) => !isNaN(Date.parse(r[xField])));
+});
+
 // Methods
 const loadDemo = () => {
   dataStore.loadDemoData();
   csvInput.value = dataStore.rawCsv.value;
-  // Demo data is large, hide it by default to avoid lag
-  showCsvPreview.value = false;
+  chartTitle.value = "Weather Data Analysis";
 };
 
 const handleDataLoad = () => {
   dataStore.processCsv(csvInput.value);
+  showPasteDialog.value = false; // Close dialog if open
+  // Reset filters
+  dateRangeState.selectedStart = null;
+  dateRangeState.selectedEnd = null;
+
+  // Set default title
+  chartTitle.value = "Chart Title";
+
+  if (isTimeAxis.value && dataStore.parsedData.value.length > 0) {
+    const xField = dataStore.xAxisField.value;
+    // Try to determine min/max for picker limits
+    const dates = dataStore.parsedData.value
+      .map((r) => new Date(r[xField]).getTime())
+      .filter((t) => !isNaN(t))
+      .sort((a, b) => a - b);
+    if (dates.length > 0) {
+      dateRangeState.minDate = new Date(dates[0]);
+      dateRangeState.maxDate = new Date(dates[dates.length - 1]);
+    }
+  }
+};
+
+const onDateRangeConfirm = (values: Date[]) => {
+  const [start, end] = values;
+  dateRangeState.selectedStart = start;
+  dateRangeState.selectedEnd = end;
+  showDateRangePicker.value = false;
+  debouncedUpdate();
 };
 
 const isSeriesSelected = (field: string) => {
@@ -265,6 +355,11 @@ const updateSeriesAxis = (field: string, isRight: boolean) => {
   }
 };
 
+const toggleAxis = (field: string) => {
+  const currentAxis = getSeriesYAxis(field);
+  updateSeriesAxis(field, currentAxis === 0);
+};
+
 // Chart Generation Logic
 const getChartOption = () => {
   const d = dataStore;
@@ -272,21 +367,47 @@ const getChartOption = () => {
 
   const isPie = d.chartType.value === "pie";
 
+  // Filter Data based on Date Range
+  let displayData = d.parsedData.value;
+  if (
+    isTimeAxis.value &&
+    dateRangeState.selectedStart &&
+    dateRangeState.selectedEnd
+  ) {
+    const xField = d.xAxisField.value;
+    const start = dateRangeState.selectedStart.getTime();
+    const end = dateRangeState.selectedEnd.getTime();
+    displayData = displayData.filter((r) => {
+      const t = new Date(r[xField]).getTime();
+      return t >= start && t <= end;
+    });
+  }
+
   // Base Option
   const option: any = {
+    title: {
+      text: chartTitle.value,
+      left: "center", // Keep title centered usually looks better, user asked for customizations
+      top: 10,
+    },
     tooltip: {
       trigger: isPie ? "item" : "axis",
       axisPointer: { type: "shadow" }, // Better for mixed charts
     },
-    legend: {},
+    legend: {
+      top: 40, // Move legend down to avoid title overlap
+      left: "left", // Requested: legend to top-left
+      type: "scroll",
+    },
     grid: {
       left: "3%",
-      right: "4%",
+      right: "5%",
       bottom: "3%",
+      top: 80, // More space for title and legend
       containLabel: true,
     },
     dataset: {
-      source: d.parsedData.value,
+      source: displayData,
     },
   };
 
@@ -304,8 +425,8 @@ const getChartOption = () => {
     }));
   } else {
     option.xAxis = {
-      type: "category",
-      data: d.parsedData.value.map((row) => row[d.xAxisField.value]),
+      type: "category", // Even for time, category is often safer for CSV unless fully parsed times
+      data: displayData.map((row) => row[d.xAxisField.value]),
     };
 
     // Check for Dual Axis
@@ -324,7 +445,7 @@ const getChartOption = () => {
       type: d.chartType.value,
       name: s.name,
       yAxisIndex: s.yAxisIndex,
-      data: d.parsedData.value.map((row) => row[s.field]),
+      data: displayData.map((row) => row[s.field]),
     }));
   }
 
@@ -416,97 +537,190 @@ watch(() => themeStore.theme, debouncedUpdate, { deep: true });
   display: flex;
   flex-direction: column;
   background: #f7f8fa;
+  overflow: hidden;
 }
 
-.config-panel {
-  flex: 0 0 auto;
+/* 1. Toolbar */
+.preview-toolbar {
+  flex: 0 0 60px; /* Slightly taller */
+  background: #fff;
   border-bottom: 1px solid #ebedf0;
-  max-height: 40%;
-  overflow-y: auto;
-}
-
-.action-buttons {
-  margin-top: 10px;
-  display: flex;
-  gap: 10px;
-}
-
-.mapping-config {
-  margin-top: 15px;
-}
-
-.config-row {
-  margin-bottom: 10px;
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  padding: 0 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  z-index: 10;
 }
 
-.config-row .label {
-  width: 80px;
-  font-weight: bold;
-  color: #646566;
-  font-size: 14px;
-}
-
-.native-select {
-  padding: 4px;
-  border: 1px solid #dcdee0;
-  border-radius: 4px;
-}
-
-.series-list {
-  flex: 1;
+.toolbar-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #323233;
   display: flex;
-  flex-direction: column;
-  gap: 5px;
+  align-items: center;
+  gap: 12px;
 }
 
-.series-item {
+.chart-title-input :deep(.van-field__control) {
+  font-weight: bold;
+  font-size: 18px;
+  color: #323233;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 2. Settings Bar */
+.settings-bar {
+  flex: 0 0 auto;
+  background: #fff;
+  border-bottom: 1px solid #ebedf0;
+  padding: 10px 20px;
   display: flex;
   align-items: center;
   gap: 15px;
-  background: #fff;
-  padding: 5px;
-  border-radius: 4px;
-  border: 1px solid #f0f0f0;
+  flex-wrap: wrap;
 }
 
-.series-item-header {
+.setting-item {
   display: flex;
   align-items: center;
-  gap: 5px;
-  min-width: 120px;
+  gap: 8px;
 }
 
-.series-options {
+.setting-label {
   font-size: 12px;
-  color: #666;
+  font-weight: 600;
+  color: #646566;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.chart-wrapper {
+.compact-radio {
+  font-size: 13px;
+}
+
+.native-select {
+  padding: 4px 8px;
+  border: 1px solid #dcdee0;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 13px;
+  color: #323233;
+  outline: none;
+}
+
+.native-select:focus {
+  border-color: var(--van-primary-color);
+}
+
+.series-setting {
+  flex: 1; /* Take remaining width */
+  min-width: 200px;
+}
+
+.series-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.series-tag {
+  padding: 4px 10px;
+  border-radius: 16px;
+  background: #f2f3f5;
+  color: #646566;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+
+.series-tag:hover {
+  background: #ebedf0;
+}
+
+.series-tag.active {
+  background: var(--van-primary-color);
+  color: #fff;
+  border-color: var(--van-primary-color);
+}
+
+.axis-toggle {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0 4px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.axis-toggle:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* 3. Chart Content */
+.chart-content {
   flex: 1;
   padding: 20px;
-  min-height: 300px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-.chart-container {
+.chart-card {
+  flex: 1;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  padding: 16px;
+  position: relative;
+}
+
+.chart-render-area {
   width: 100%;
   height: 100%;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 }
 
-.data-controls {
-  padding: 10px 16px;
-  background: #fff;
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #969799;
 }
 
+.empty-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state p {
+  margin: 4px 0;
+  font-size: 16px;
+}
+
+.empty-state .sub-text {
+  font-size: 13px;
+  color: #c8c9cc;
+  margin-bottom: 20px;
+}
+
+/* Dialogs */
 .data-table-container {
   max-height: 60vh;
   overflow: auto;
-  padding: 10px;
+  padding: 0;
 }
 
 .data-table {
@@ -517,8 +731,8 @@ watch(() => themeStore.theme, debouncedUpdate, { deep: true });
 
 .data-table th,
 .data-table td {
-  border: 1px solid #eee;
-  padding: 8px;
+  border: 1px solid #ebedf0;
+  padding: 10px 12px;
   text-align: left;
 }
 
@@ -526,13 +740,30 @@ watch(() => themeStore.theme, debouncedUpdate, { deep: true });
   position: sticky;
   top: 0;
   background: #f7f8fa;
-  font-weight: bold;
+  font-weight: 600;
+  color: #323233;
   z-index: 1;
+}
+
+.data-table tr:hover td {
+  background: #fcfcfc;
 }
 
 .no-data {
   text-align: center;
-  padding: 20px;
-  color: #999;
+  padding: 40px;
+  color: #969799;
+}
+
+.paste-container {
+  padding: 20px 0 0 0;
+}
+
+.paste-textarea :deep(.van-field__control) {
+  font-family: monospace;
+  font-size: 12px;
+  background: #f7f8fa;
+  padding: 10px;
+  border-radius: 4px;
 }
 </style>
