@@ -20,6 +20,8 @@ export const useDataStore = () => {
     const xAxisField = ref<string>('')
     const chartType = ref<ChartType>('line')
     const seriesConfigs = ref<SeriesConfig[]>([])
+    // Cache to remember settings (like yAxisIndex) when a series is removed and re-added
+    const seriesConfigCache = ref<Record<string, SeriesConfig>>({})
     const isDualAxis = ref(false)
 
     // Default demo data
@@ -81,6 +83,10 @@ export const useDataStore = () => {
                     const firstRow = results.data[0] as Record<string, any>
                     headers.value = results.meta.fields || Object.keys(firstRow)
 
+                    // Clear Series Configs & Cache on new data load
+                    seriesConfigs.value = []
+                    seriesConfigCache.value = {}
+
                     // Auto-select defaults
                     if (headers.value.length > 0) {
                         xAxisField.value = headers.value[0] || ''
@@ -108,22 +114,35 @@ export const useDataStore = () => {
     // Actions
     const addSeries = (field: string) => {
         if (!seriesConfigs.value.find(s => s.field === field)) {
-            seriesConfigs.value.push({
-                field,
-                type: chartType.value,
-                yAxisIndex: 0,
-                name: field
-            })
+            // Check cache first
+            if (seriesConfigCache.value[field]) {
+                seriesConfigs.value.push({ ...seriesConfigCache.value[field] })
+            } else {
+                seriesConfigs.value.push({
+                    field,
+                    type: chartType.value,
+                    yAxisIndex: 0,
+                    name: field
+                })
+            }
         }
     }
 
     const removeSeries = (index: number) => {
+        const removed = seriesConfigs.value[index]
+        if (removed) {
+            // Save to cache before removing
+            seriesConfigCache.value[removed.field] = { ...removed }
+        }
         seriesConfigs.value.splice(index, 1)
     }
 
     const updateSeries = (index: number, config: Partial<SeriesConfig>) => {
         if (seriesConfigs.value[index]) {
             Object.assign(seriesConfigs.value[index], config)
+            // Update cache as well to keep it fresh
+            const s = seriesConfigs.value[index]
+            seriesConfigCache.value[s.field] = { ...s }
         }
     }
 

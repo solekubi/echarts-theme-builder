@@ -545,16 +545,26 @@ const getChartOption = () => {
     const leftSeries = d.seriesConfigs.value.filter((s) => s.yAxisIndex === 0);
     const rightSeries = d.seriesConfigs.value.filter((s) => s.yAxisIndex === 1);
 
-    // Dynamic Axis Naming
-    const leftName = leftSeries.map((s) => s.name).join(" / ");
-    const rightName = rightSeries.map((s) => s.name).join(" / ");
+    // Dynamic Axis Naming Helper
+    const getAxisName = (seriesList: typeof leftSeries) => {
+      if (seriesList.length === 0) return "";
+      if (seriesList.length <= 2)
+        return seriesList.map((s) => s.name).join(" / ");
+      return `${seriesList[0].name} / ${seriesList[1].name}...`;
+    };
+
+    const leftName = getAxisName(leftSeries);
+    const rightName = getAxisName(rightSeries);
 
     option.yAxis = [{ type: "value", name: leftName || "Value" }];
+
     if (rightSeries.length > 0) {
       option.yAxis.push({
         type: "value",
         name: rightName,
         position: "right",
+        alignTicks: true, // Key fix for dual axis alignment
+        splitLine: { show: false }, // Avoid messy grid lines
       });
     }
 
