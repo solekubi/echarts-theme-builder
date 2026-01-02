@@ -62,12 +62,7 @@ export const useDataStore = () => {
 
         const csvData = headers.join(',') + '\n' + rows.join('\n')
         processCsv(csvData)
-
-        // Set defaults: Temperature on Left, Humidity on Right
-        const humSeries = seriesConfigs.value.find(s => s.field === 'Humidity')
-        if (humSeries) {
-            humSeries.yAxisIndex = 1
-        }
+        // Hardcoded logic removed; processCsv now handles auto-detection
     }
 
     const processCsv = (csv: string) => {
@@ -96,10 +91,44 @@ export const useDataStore = () => {
                             return typeof val === 'number'
                         })
 
-                        seriesConfigs.value = numericFields.slice(0, 2).map((field) => ({
+                        const selectedFields = numericFields.slice(0, 2);
+
+                        // Smart Axis Detection
+                        // If we have 2 series, check if their magnitudes differ significantly
+                        let useDualAxis = false;
+                        if (selectedFields.length === 2) {
+                            const getAvg = (field: string) => {
+                                let sum = 0;
+                                let count = 0;
+                                const limit = Math.min(results.data.length, 50);
+                                for (let i = 0; i < limit; i++) {
+                                    const val = (results.data[i] as any)[field];
+                                    if (typeof val === 'number') {
+                                        sum += Math.abs(val);
+                                        count++;
+                                    }
+                                }
+                                return count > 0 ? sum / count : 0;
+                            };
+
+                            const avg0 = getAvg(selectedFields[0]!);
+                            const avg1 = getAvg(selectedFields[1]!);
+
+                            // If one average is 0, avoid division by zero issues, just don't split unless logic says otherwise
+                            if (avg0 > 0 && avg1 > 0) {
+                                const ratio = Math.max(avg0, avg1) / Math.min(avg0, avg1);
+                                // If ratio > 2 (e.g. 20 vs 40 is borderline, 20 vs 50 triggers), use dual axis
+                                // User case: 18 vs 85 -> Ratio ~4.7 -> Triggers
+                                if (ratio > 2.0) {
+                                    useDualAxis = true;
+                                }
+                            }
+                        }
+
+                        seriesConfigs.value = selectedFields.map((field, index) => ({
                             field,
                             type: 'line', // default type
-                            yAxisIndex: 0,
+                            yAxisIndex: (useDualAxis && index === 1) ? 1 : 0,
                             name: field
                         }))
                     }

@@ -1,30 +1,13 @@
 <script setup lang="ts">
-import { ref, useTemplateRef } from "vue";
-// Simple fixed sidebar layout without responsive design
+import { useTemplateRef } from "vue";
 import ChartPreviewPanel from "./components/ChartPreviewPanel.vue";
 import ThemePanel from "./components/ThemePanel.vue";
-import { useLocalization } from "./composables/useLocalization";
-import {
-  RadioGroup as VanRadioGroup,
-  Radio as VanRadio,
-  Row as VanRow,
-  Col as VanCol,
-} from "vant";
-
-// Set up language control
-const { switchLanguage, currentLanguage, availableLanguages } =
-  useLocalization();
-const currentLang = ref(currentLanguage);
-// Only show language selector in dev/preview mode
-// Use import.meta.env.DEV to only show in development mode
-const showLanguageSelector = import.meta.env.VITE_SHOW_LANGUAGE_SELECTOR;
-
-const onLanguageChange = (lang: string) => {
-  switchLanguage(lang);
-};
+import { Row as VanRow, Col as VanCol } from "vant";
 
 // Get reference to chart preview panel
-const chartPreviewRef = useTemplateRef("chartPreviewRef");
+// Note: 'chartPreviewRef' string must match the ref="chartPreviewRef" in template
+const chartPreviewRef =
+  useTemplateRef<InstanceType<typeof ChartPreviewPanel>>("chartPreviewRef");
 </script>
 
 <template>

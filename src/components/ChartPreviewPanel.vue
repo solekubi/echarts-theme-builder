@@ -242,8 +242,13 @@ import {
 } from "vue";
 import * as echarts from "echarts";
 import { useThemeStore } from "../stores/theme";
-import { useGlobalDataStore } from "../stores/data";
-import { useI18n } from "vue-i18n";
+import { useGlobalDataStore, type SeriesConfig } from "../stores/data"; // Import SeriesConfig
+// ... imports ...
+// The duplicate imports below are removed as per the instruction to avoid unrelated edits and keep the file syntactically correct.
+// import * as echarts from "echarts";
+// import { useThemeStore } from "../stores/theme";
+// import { useGlobalDataStore } from "../stores/data";
+// ... removed unused useI18n ...
 
 import { useLocalization } from "../composables/useLocalization";
 
@@ -253,8 +258,11 @@ const dataStore = useGlobalDataStore();
 const { locale, availableLanguages, t } = useLocalization();
 
 // UI State
-const activeNames = ref(["data"]);
+// ... removed unused activeNames ...
 const csvInput = ref("");
+
+// ... (logic)
+// Removed stray/duplicate code block that was accidentally inserted.
 const showDataDialog = ref(false);
 const showPasteDialog = ref(false);
 const fileInputRef = ref<HTMLInputElement | null>(null);
@@ -340,9 +348,24 @@ const processedData = computed(() => {
 
   // 2. Aggregate by Granularity
   if (isTimeAxis.value && granularity.value !== "raw") {
-    // Helper to format key
-    const getKey = (dateStr: string) => {
+    // Helper to get bucket timestamp
+    const getBucketTs = (dateStr: string) => {
       const d = new Date(dateStr);
+      const y = d.getFullYear();
+      const m = d.getMonth();
+      const day = d.getDate();
+      const h = d.getHours();
+
+      if (granularity.value === "year") return new Date(y, 0, 1).getTime();
+      if (granularity.value === "month") return new Date(y, m, 1).getTime();
+      if (granularity.value === "day") return new Date(y, m, day).getTime();
+      if (granularity.value === "hour") return new Date(y, m, day, h).getTime();
+      return d.getTime();
+    };
+
+    // Helper to format bucket key for display
+    const formatBucket = (ts: number) => {
+      const d = new Date(ts);
       const y = d.getFullYear();
       const m = String(d.getMonth() + 1).padStart(2, "0");
       const day = String(d.getDate()).padStart(2, "0");
@@ -352,32 +375,42 @@ const processedData = computed(() => {
       if (granularity.value === "month") return `${y}-${m}`;
       if (granularity.value === "day") return `${y}-${m}-${day}`;
       if (granularity.value === "hour") return `${y}-${m}-${day} ${h}:00`;
-      return dateStr;
+      return d.toISOString();
     };
 
     // Grouping
-    const groups: Record<string, any[]> = {};
+    const groups: Record<number, any[]> = {};
     data.forEach((row) => {
-      const key = getKey(row[xField]);
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(row);
+      const ts = getBucketTs(row[xField]);
+      if (!groups[ts]) groups[ts] = [];
+      groups[ts].push(row);
     });
 
-    // Averaging numeric fields
+    // Averaging numerical fields
     return Object.keys(groups)
-      .sort()
-      .map((key) => {
-        const groupRows = groups[key];
-        const result: any = { [xField]: key };
+      .map(Number)
+      .sort((a, b) => a - b)
+      .map((ts) => {
+        const groupRows = groups[ts];
+        if (!groupRows) return { [xField]: formatBucket(ts) }; // Safety check
+
+        const result: any = { [xField]: formatBucket(ts) };
 
         // Average configured series
         dataStore.seriesConfigs.value.forEach((series) => {
           const field = series.field;
-          const sum = groupRows.reduce(
-            (acc, r) => acc + parseFloat(r[field] || 0),
-            0
-          );
-          const avg = sum / groupRows.length;
+          let sum = 0;
+          let count = 0;
+
+          groupRows.forEach((r) => {
+            const val = parseFloat(r[field]);
+            if (!isNaN(val)) {
+              sum += val;
+              count++;
+            }
+          });
+
+          const avg = count > 0 ? sum / count : 0;
           result[field] = parseFloat(avg.toFixed(2));
         });
 
@@ -403,37 +436,73 @@ const handleDataLoad = () => {
   dataStore.processCsv(csvInput.value);
   showPasteDialog.value = false; // Close dialog if open
 
-  // Reset filters
-  dateInputState.start = "";
-  dateInputState.end = "";
+  // Reset filters used to happen here, but now we rely on the watcher below
+  // to set smart defaults when data changes.
+  // However, we should ensure we reset explicit states to avoid confusion
+  // before the watcher kicks in.
   granularity.value = "raw";
-
-  // Set default title
   chartTitle.value = "Chart Title";
-
-  // Auto-set date range if data exists
-  if (isTimeAxis.value && dataStore.parsedData.value.length > 0) {
-    const xField = dataStore.xAxisField.value;
-    const dates = dataStore.parsedData.value
-      .map((r) => new Date(r[xField]).getTime())
-      .filter((t) => !isNaN(t))
-      .sort((a, b) => a - b);
-
-    if (dates.length > 0) {
-      const min = new Date(dates[0]);
-      const max = new Date(dates[dates.length - 1]);
-      // Format to YYYY-MM-DD
-      const toIsoDate = (d: Date) => d.toISOString().split("T")[0];
-      dateInputState.start = toIsoDate(min);
-      dateInputState.end = toIsoDate(max);
-    }
-  }
 };
 
 const resetDateInputs = () => {
   dateInputState.start = "";
   dateInputState.end = "";
 };
+
+// Watch data source changes to Auto-Set defaults
+watch(
+  () => dataStore.parsedData.value,
+  (newData) => {
+    if (newData.length > 0) {
+      // Reset Date Filters on new data
+      dateInputState.start = "";
+      dateInputState.end = "";
+
+      // We need to wait for isTimeAxis computed to update.
+      // Since this watcher has flush: 'post' (default for watch? No, default is pre. We need user specified or default)
+      // Actually computed props are updated lazily. accessing isTimeAxis.value is enough.
+
+      if (isTimeAxis.value) {
+        const xField = dataStore.xAxisField.value;
+        const dates = newData
+          .map((r) => new Date(r[xField]).getTime())
+          .filter((t) => !isNaN(t))
+          .sort((a, b) => a - b);
+
+        if (dates.length > 0) {
+          const minTs = dates[0];
+          const maxTs = dates[dates.length - 1];
+
+          // Ensure valid numbers
+          if (minTs === undefined || maxTs === undefined) return;
+
+          // Re-implement with strict checks
+          const maxD = new Date(maxTs);
+          const minD = new Date(minTs);
+
+          // Default range: Last 1 month
+          const startDate = new Date(maxD);
+          startDate.setMonth(startDate.getMonth() - 1);
+
+          // Ensure start is not before actual min
+          const finalStart = startDate.getTime() < minTs ? minD : startDate;
+
+          // Helper: Format to local YYYY-MM-DD
+          const toLocalIsoDate = (d: Date) => {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, "0");
+            const day = String(d.getDate()).padStart(2, "0");
+            return `${y}-${m}-${day}`;
+          };
+
+          dateInputState.start = toLocalIsoDate(finalStart);
+          dateInputState.end = toLocalIsoDate(maxD);
+        }
+      }
+    }
+  },
+  { flush: "post" }
+); // Ensure DOM/computed updates have happened;
 
 const isSeriesSelected = (field: string) => {
   return !!dataStore.seriesConfigs.value.find((s) => s.field === field);
@@ -546,11 +615,17 @@ const getChartOption = () => {
     const rightSeries = d.seriesConfigs.value.filter((s) => s.yAxisIndex === 1);
 
     // Dynamic Axis Naming Helper
-    const getAxisName = (seriesList: typeof leftSeries) => {
+    const getAxisName = (seriesList: SeriesConfig[]) => {
       if (seriesList.length === 0) return "";
-      if (seriesList.length <= 2)
-        return seriesList.map((s) => s.name).join(" / ");
-      return `${seriesList[0].name} / ${seriesList[1].name}...`;
+
+      // Safe access to names
+      if (seriesList.length <= 2) {
+        return seriesList.map((s: SeriesConfig) => s.name || "").join(" / ");
+      }
+
+      const n1 = seriesList[0]?.name || "";
+      const n2 = seriesList[1]?.name || "";
+      return `${n1} / ${n2}...`;
     };
 
     const leftName = getAxisName(leftSeries);

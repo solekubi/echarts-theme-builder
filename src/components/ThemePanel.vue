@@ -8,15 +8,15 @@
           <div class="action-buttons">
             <van-button type="primary" @click="downloadTheme">
               <van-icon name="down" />
-              {{ $t('panel.download') }}
+              {{ $t("panel.download") }}
             </van-button>
             <van-button @click="importConfig">
               <van-icon name="upgrade" />
-              {{ $t('panel.import') }}
+              {{ $t("panel.import") }}
             </van-button>
             <van-button @click="exportConfig">
               <van-icon name="share" />
-              {{ $t('panel.export') }}
+              {{ $t("panel.export") }}
             </van-button>
             <!-- showThemeCode 按钮已删除 -->
           </div>
@@ -24,22 +24,22 @@
           <div class="action-buttons">
             <van-button @click="refreshCharts">
               <van-icon name="replay" />
-              {{ $t('common.refresh') }}
+              {{ $t("common.refresh") }}
             </van-button>
             <van-button @click="resetTheme">
               <van-icon name="revoke" />
-              {{ $t('common.reset') }}
+              {{ $t("common.reset") }}
             </van-button>
           </div>
 
           <div class="action-buttons">
             <van-button @click="showHelp">
               <van-icon name="info-o" />
-              {{ $t('common.help') }}
+              {{ $t("common.help") }}
             </van-button>
             <van-button @click="openSourceCode">
               <van-icon name="link-o" />
-              {{ $t('panel.sourceCode') }}
+              {{ $t("panel.sourceCode") }}
             </van-button>
           </div>
 
@@ -62,13 +62,17 @@
 
           <!-- Predefined Themes -->
           <div class="predefined-themes">
-            <h4>{{ $t('panel.preDefinedThemes') }}</h4>
+            <h4>{{ $t("panel.preDefinedThemes") }}</h4>
             <div class="theme-grid">
               <div
                 v-for="(themeItem, index) in preDefinedThemes"
                 :key="themeItem.name"
                 class="theme-item"
-                :class="themeStore.activePreDefinedThemeIndex.value === index ? 'active' : ''"
+                :class="
+                  themeStore.activePreDefinedThemeIndex.value === index
+                    ? 'active'
+                    : ''
+                "
                 :style="{ backgroundColor: themeItem.background }"
                 :title="themeItem.name"
                 @click="selectPreDefinedTheme(index)"
@@ -86,7 +90,7 @@
                 @click="uploadImageInputRef?.click()"
               >
                 <van-icon name="plus" />
-                <span>{{ $t('panel.extractFromImage') }}</span>
+                <span>{{ $t("panel.extractFromImage") }}</span>
               </div>
             </div>
           </div>
@@ -100,18 +104,12 @@
             v-model="theme.backgroundColor"
             :label="$t('colors.background')"
           />
-          <ColorPicker
-            v-model="theme.titleColor"
-            :label="$t('colors.title')"
-          />
+          <ColorPicker v-model="theme.titleColor" :label="$t('colors.title')" />
           <ColorPicker
             v-model="theme.subtitleColor"
             :label="$t('colors.subtitle')"
           />
-          <ColorList
-            v-model="theme.color"
-            :label="$t('colors.theme')"
-          />
+          <ColorList v-model="theme.color" :label="$t('colors.theme')" />
           <ColorPicker
             v-model="theme.markTextColor"
             :label="$t('colors.markText')"
@@ -169,8 +167,11 @@
         <div class="panel-content">
           <van-field :label="$t('panel.axis')">
             <template #input>
-              <van-checkbox v-model="theme.axisSeperateSetting" @change="onAxisSettingChange">
-                {{ $t('panel.separateAxisSetting') }}
+              <van-checkbox
+                v-model="theme.axisSeperateSetting"
+                @change="onAxisSettingChange"
+              >
+                {{ $t("panel.separateAxisSetting") }}
               </van-checkbox>
             </template>
           </van-field>
@@ -180,7 +181,9 @@
             :key="index"
             class="axis-group"
           >
-            <h4 v-if="axis.type !== 'all'">{{ $t(`axis.${axis.type}Axis`) }}</h4>
+            <h4 v-if="axis.type !== 'all'">
+              {{ $t(`axis.${axis.type}Axis`) }}
+            </h4>
 
             <ColorPicker
               v-model="axis.axisLineColor"
@@ -224,7 +227,7 @@
             :label="$t('colors.legendText')"
           />
 
-          <h4>{{ $t('panel.legendPosition') }}</h4>
+          <h4>{{ $t("panel.legendPosition") }}</h4>
           <van-field
             v-model="legendLeft"
             :label="$t('position.left')"
@@ -336,7 +339,7 @@
           <van-field :label="$t('lineChart.smooth')">
             <template #input>
               <van-checkbox v-model="theme.lineSmooth">
-                {{ $t('lineChart.smooth') }}
+                {{ $t("lineChart.smooth") }}
               </van-checkbox>
             </template>
           </van-field>
@@ -360,20 +363,42 @@
           <van-field :label="$t('lineChart.symbolShape')">
             <template #input>
               <van-radio-group v-model="theme.symbol" direction="horizontal">
-                <van-radio name="circle">{{ $t('lineChart.circle') }}</van-radio>
-                <van-radio name="emptyCircle">{{ $t('lineChart.emptyCircle') }}</van-radio>
-                <van-radio name="rect">{{ $t('lineChart.rect') }}</van-radio>
-                <van-radio name="emptyRect">{{ $t('lineChart.emptyRect') }}</van-radio>
-                <van-radio name="roundRect">{{ $t('lineChart.roundRect') }}</van-radio>
-                <van-radio name="emptyRoundRect">{{ $t('lineChart.emptyRoundRect') }}</van-radio>
-                <van-radio name="triangle">{{ $t('lineChart.triangle') }}</van-radio>
-                <van-radio name="emptyTriangle">{{ $t('lineChart.emptyTriangle') }}</van-radio>
-                <van-radio name="diamond">{{ $t('lineChart.diamond') }}</van-radio>
-                <van-radio name="emptyDiamond">{{ $t('lineChart.emptyDiamond') }}</van-radio>
-                <van-radio name="pin">{{ $t('lineChart.pin') }}</van-radio>
-                <van-radio name="emptyPin">{{ $t('lineChart.emptyPin') }}</van-radio>
-                <van-radio name="arrow">{{ $t('lineChart.arrow') }}</van-radio>
-                <van-radio name="emptyArrow">{{ $t('lineChart.emptyArrow') }}</van-radio>
+                <van-radio name="circle">{{
+                  $t("lineChart.circle")
+                }}</van-radio>
+                <van-radio name="emptyCircle">{{
+                  $t("lineChart.emptyCircle")
+                }}</van-radio>
+                <van-radio name="rect">{{ $t("lineChart.rect") }}</van-radio>
+                <van-radio name="emptyRect">{{
+                  $t("lineChart.emptyRect")
+                }}</van-radio>
+                <van-radio name="roundRect">{{
+                  $t("lineChart.roundRect")
+                }}</van-radio>
+                <van-radio name="emptyRoundRect">{{
+                  $t("lineChart.emptyRoundRect")
+                }}</van-radio>
+                <van-radio name="triangle">{{
+                  $t("lineChart.triangle")
+                }}</van-radio>
+                <van-radio name="emptyTriangle">{{
+                  $t("lineChart.emptyTriangle")
+                }}</van-radio>
+                <van-radio name="diamond">{{
+                  $t("lineChart.diamond")
+                }}</van-radio>
+                <van-radio name="emptyDiamond">{{
+                  $t("lineChart.emptyDiamond")
+                }}</van-radio>
+                <van-radio name="pin">{{ $t("lineChart.pin") }}</van-radio>
+                <van-radio name="emptyPin">{{
+                  $t("lineChart.emptyPin")
+                }}</van-radio>
+                <van-radio name="arrow">{{ $t("lineChart.arrow") }}</van-radio>
+                <van-radio name="emptyArrow">{{
+                  $t("lineChart.emptyArrow")
+                }}</van-radio>
               </van-radio-group>
             </template>
           </van-field>
@@ -438,14 +463,8 @@
       <!-- K Line Chart -->
       <van-collapse-item :title="$t('panel.kline')" name="kline">
         <div class="panel-content">
-          <ColorPicker
-            v-model="theme.kColor"
-            :label="$t('kline.upColor')"
-          />
-          <ColorPicker
-            v-model="theme.kColor0"
-            :label="$t('kline.downColor')"
-          />
+          <ColorPicker v-model="theme.kColor" :label="$t('kline.upColor')" />
+          <ColorPicker v-model="theme.kColor0" :label="$t('kline.downColor')" />
           <ColorPicker
             v-model="theme.kBorderColor"
             :label="$t('kline.upBorderColor')"
@@ -483,66 +502,71 @@
 </template>
 
 <script setup lang="ts">
-import { ref, useTemplateRef } from 'vue'
-import { useThemeStore } from '../stores/theme'
-import { PRE_DEFINED_THEMES } from '../stores/theme'
-import ColorPicker from './ColorPicker.vue'
-import ColorList from './ColorList.vue'
-import type ChartPreviewPanel from './ChartPreviewPanel.vue'
-import { downloadJsonFile, downloadJsFile } from '../utils/download'
-import { showToast, showDialog, showLoadingToast } from 'vant'
-import { useI18n } from 'vue-i18n'
-import * as echarts from 'echarts'
-import ColorThief from 'colorthief'
+import { ref, useTemplateRef } from "vue";
+import { useThemeStore } from "../stores/theme";
+import { PRE_DEFINED_THEMES } from "../stores/theme";
+import ColorPicker from "./ColorPicker.vue";
+import ColorList from "./ColorList.vue";
+// import ChartPreviewPanel from "./ChartPreviewPanel.vue"; // Removed to avoid TS1192
+import { downloadJsonFile, downloadJsFile } from "../utils/download";
+import { showToast, showDialog, showLoadingToast } from "vant";
+import { useI18n } from "vue-i18n";
+import * as echarts from "echarts";
+import ColorThief from "colorthief";
 
 // Initialize i18n and localization
-const { t } = useI18n()
+const { t } = useI18n();
+
+// Interface for the method we need
+interface ChartPreviewPanelInstance {
+  updateCharts: () => void;
+}
 
 // Props
 interface Props {
-  chartPreviewRef?: InstanceType<typeof ChartPreviewPanel> | null
+  chartPreviewRef?: ChartPreviewPanelInstance | null;
 }
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 // Component state
-const activeNames = ref(['functions'])
-const importFileInputRef = useTemplateRef('importFileInput')
-const uploadImageInputRef = useTemplateRef('uploadImageInput')
+const activeNames = ref(["functions"]);
+const importFileInputRef = useTemplateRef("importFileInput");
+const uploadImageInputRef = useTemplateRef("uploadImageInput");
 
 // Theme store
-const themeStore = useThemeStore()
-const { theme, themeName } = themeStore
+const themeStore = useThemeStore();
+const { theme, themeName } = themeStore;
 
 // Predefined themes
-const preDefinedThemes = PRE_DEFINED_THEMES
+const preDefinedThemes = PRE_DEFINED_THEMES;
 
 // Grid layout reactive properties
-const gridLeft = ref(String(theme.gridLeft))
-const gridRight = ref(String(theme.gridRight))
-const gridTop = ref(String(theme.gridTop))
-const gridBottom = ref(String(theme.gridBottom))
+const gridLeft = ref(String(theme.gridLeft));
+const gridRight = ref(String(theme.gridRight));
+const gridTop = ref(String(theme.gridTop));
+const gridBottom = ref(String(theme.gridBottom));
 
 // Legend position reactive properties
-const legendLeft = ref(String(theme.legendLeft))
-const legendRight = ref(String(theme.legendRight))
-const legendTop = ref(String(theme.legendTop))
-const legendBottom = ref(String(theme.legendBottom))
+const legendLeft = ref(String(theme.legendLeft));
+const legendRight = ref(String(theme.legendRight));
+const legendTop = ref(String(theme.legendTop));
+const legendBottom = ref(String(theme.legendBottom));
 
 // Legend value validation function
-const validateLegendValue = (position: 'left' | 'right' | 'top' | 'bottom') => {
+const validateLegendValue = (position: "left" | "right" | "top" | "bottom") => {
   let valueRef;
 
   switch (position) {
-    case 'left':
+    case "left":
       valueRef = legendLeft;
       break;
-    case 'right':
+    case "right":
       valueRef = legendRight;
       break;
-    case 'top':
+    case "top":
       valueRef = legendTop;
       break;
-    case 'bottom':
+    case "bottom":
       valueRef = legendBottom;
       break;
   }
@@ -552,38 +576,44 @@ const validateLegendValue = (position: 'left' | 'right' | 'top' | 'bottom') => {
   // Check if the value is a valid position value (number, percentage, or special value)
   const isValid =
     // Empty string - will be converted to auto in setOption
-    inputValue === '' ||
+    inputValue === "" ||
     // Valid number
     /^[0-9]+$/.test(inputValue) ||
     // Valid percentage (e.g. 10%, 10.5%)
     /^[0-9]+(\.[0-9]+)?%$/.test(inputValue) ||
     // Special values for legend position
-    inputValue === 'auto' ||
-    inputValue === 'center' ||
-    inputValue === 'left' ||
-    inputValue === 'right' ||
-    inputValue === 'top' ||
-    inputValue === 'bottom';
+    inputValue === "auto" ||
+    inputValue === "center" ||
+    inputValue === "left" ||
+    inputValue === "right" ||
+    inputValue === "top" ||
+    inputValue === "bottom";
 
   if (isValid) {
     // For numeric values, convert to number if it's a pure number
-    const finalValue = inputValue === '' ?
-                       position === 'bottom' ? 10 :
-                       position === 'left' ? 'center' : 'auto' :
-                       (/^[0-9]+$/.test(inputValue)) ? parseInt(inputValue, 10) : inputValue;
+    const finalValue =
+      inputValue === ""
+        ? position === "bottom"
+          ? 10
+          : position === "left"
+          ? "center"
+          : "auto"
+        : /^[0-9]+$/.test(inputValue)
+        ? parseInt(inputValue, 10)
+        : inputValue;
 
     // Update the corresponding theme property
     switch (position) {
-      case 'left':
+      case "left":
         theme.legendLeft = finalValue;
         break;
-      case 'right':
+      case "right":
         theme.legendRight = finalValue;
         break;
-      case 'top':
+      case "top":
         theme.legendTop = finalValue;
         break;
-      case 'bottom':
+      case "bottom":
         theme.legendBottom = finalValue;
         break;
     }
@@ -591,51 +621,51 @@ const validateLegendValue = (position: 'left' | 'right' | 'top' | 'bottom') => {
     // If invalid, reset to default values
     let defaultValue;
     switch (position) {
-      case 'left':
-        defaultValue = 'center';
+      case "left":
+        defaultValue = "center";
         break;
-      case 'bottom':
+      case "bottom":
         defaultValue = 10;
         break;
       default:
-        defaultValue = 'auto';
+        defaultValue = "auto";
     }
 
     valueRef.value = String(defaultValue);
 
     // Set the theme property to default value
     switch (position) {
-      case 'left':
-        theme.legendLeft = 'center';
+      case "left":
+        theme.legendLeft = "center";
         break;
-      case 'right':
-        theme.legendRight = 'auto';
+      case "right":
+        theme.legendRight = "auto";
         break;
-      case 'top':
-        theme.legendTop = 'auto';
+      case "top":
+        theme.legendTop = "auto";
         break;
-      case 'bottom':
+      case "bottom":
         theme.legendBottom = 10;
         break;
     }
   }
-}
+};
 
 // Grid value validation function
-const validateGridValue = (position: 'left' | 'right' | 'top' | 'bottom') => {
+const validateGridValue = (position: "left" | "right" | "top" | "bottom") => {
   let valueRef;
 
   switch (position) {
-    case 'left':
+    case "left":
       valueRef = gridLeft;
       break;
-    case 'right':
+    case "right":
       valueRef = gridRight;
       break;
-    case 'top':
+    case "top":
       valueRef = gridTop;
       break;
-    case 'bottom':
+    case "bottom":
       valueRef = gridBottom;
       break;
   }
@@ -645,7 +675,7 @@ const validateGridValue = (position: 'left' | 'right' | 'top' | 'bottom') => {
   // Check if the value is a number or a percentage string
   const isValid =
     // Empty string - will be converted to undefined in setOption
-    inputValue === '' ||
+    inputValue === "" ||
     // Valid number
     /^[0-9]+$/.test(inputValue) ||
     // Valid percentage (e.g. 10%, 10.5%)
@@ -655,354 +685,389 @@ const validateGridValue = (position: 'left' | 'right' | 'top' | 'bottom') => {
     // Update the theme property with the validated value
     // For numeric values, convert to number if it's a pure number
     // Empty strings will use default values defined in themeGenerator.ts
-    const finalValue = inputValue === '' ?
-                       (position === 'left' || position === 'right' ? '10%' : 60) :
-                       (/^[0-9]+$/.test(inputValue)) ? parseInt(inputValue, 10) : inputValue;
+    const finalValue =
+      inputValue === ""
+        ? position === "left" || position === "right"
+          ? "10%"
+          : 60
+        : /^[0-9]+$/.test(inputValue)
+        ? parseInt(inputValue, 10)
+        : inputValue;
 
     // Update the corresponding theme property
     switch (position) {
-      case 'left':
+      case "left":
         theme.gridLeft = finalValue;
         break;
-      case 'right':
+      case "right":
         theme.gridRight = finalValue;
         break;
-      case 'top':
+      case "top":
         theme.gridTop = finalValue;
         break;
-      case 'bottom':
+      case "bottom":
         theme.gridBottom = finalValue;
         break;
     }
   } else {
     // If invalid, reset to default values
-    const defaultValue = position === 'left' || position === 'right' ? '10%' : 60;
+    const defaultValue =
+      position === "left" || position === "right" ? "10%" : 60;
     valueRef.value = String(defaultValue);
 
     // Set the theme property to default value
     switch (position) {
-      case 'left':
-        theme.gridLeft = '10%';
+      case "left":
+        theme.gridLeft = "10%";
         break;
-      case 'right':
-        theme.gridRight = '10%';
+      case "right":
+        theme.gridRight = "10%";
         break;
-      case 'top':
+      case "top":
         theme.gridTop = 60;
         break;
-      case 'bottom':
+      case "bottom":
         theme.gridBottom = 60;
         break;
     }
   }
-}
+};
 
 // Methods
 const downloadTheme = async () => {
   try {
-    const themeConfig = themeStore.getEChartsTheme()
-    const jsContent = themeStore.getThemeJsFile()
-    const filename = themeName.value && echarts.format.encodeHTML(themeName.value) || 'customized'
+    const themeConfig = themeStore.getEChartsTheme();
+    const jsContent = themeStore.getThemeJsFile();
+    const filename =
+      (themeName.value && echarts.format.encodeHTML(themeName.value)) ||
+      "customized";
 
     // Show format selection dialog using action sheet style
     try {
       await showDialog({
-        title: t('modals.formatSelection'),
-        message: t('modals.formatSelectionMsg'),
+        title: t("modals.formatSelection"),
+        message: t("modals.formatSelectionMsg"),
         showCancelButton: true,
-        confirmButtonText: t('modals.jsFormat'),
-        cancelButtonText: t('modals.jsonFormat'),
-        closeOnClickOverlay: true
-      })
+        confirmButtonText: t("modals.jsFormat"),
+        cancelButtonText: t("modals.jsonFormat"),
+        closeOnClickOverlay: true,
+      });
 
       // User chose JavaScript
-      downloadJsFile(jsContent, filename)
-      showUsageInstructions('js', filename)
+      downloadJsFile(jsContent, filename);
+      showUsageInstructions("js", filename);
     } catch (e) {
-      if (e !== 'cancel') {
-        throw e
+      if (e !== "cancel") {
+        throw e;
       }
       // User chose JSON (clicked cancel button)
-      downloadJsonFile(themeConfig, filename)
-      showUsageInstructions('json', filename)
+      downloadJsonFile(themeConfig, filename);
+      showUsageInstructions("json", filename);
     }
   } catch (error) {
-    console.error('Download failed:', error)
+    console.error("Download failed:", error);
     showToast({
-      message: t('modals.downloadFailed'),
-      type: 'fail'
-    })
+      message: t("modals.downloadFailed"),
+      type: "fail",
+    });
   }
-}
+};
 
-const showUsageInstructions = (format: 'js' | 'json', filename: string) => {
-  if (format === 'js') {
+const showUsageInstructions = (format: "js" | "json", filename: string) => {
+  if (format === "js") {
     showDialog({
-      title: t('modals.jsUsageTitle'),
+      title: t("modals.jsUsageTitle"),
       message: `<div style="text-align: left; padding: 5px 0;">
           <ol style="margin: 0; line-height: 1; list-style: inside decimal;">
-            <li>${t('modals.jsUsageStep1').replace('__filename__', `<code style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-family: Monaco, monospace;">${filename}.js</code>`)}</li>
-            <li>${t('modals.jsUsageStep2')}<br/><code style="background: #f0f0f0; padding: 4px 8px; border-radius: 3px; font-family: Monaco, monospace; display: inline-block; margin-top: 6px;">&lt;script src="${filename}.js"&gt;&lt;/script&gt;</code></li>
-            <li>${t('modals.jsUsageStep3')}<br/><code style="background: #f0f0f0; padding: 4px 8px; border-radius: 3px; font-family: Monaco, monospace; display: inline-block; margin-top: 6px;">echarts.init(dom, '${filename}')</code></li>
+            <li>${t("modals.jsUsageStep1").replace(
+              "__filename__",
+              `<code style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-family: Monaco, monospace;">${filename}.js</code>`
+            )}</li>
+            <li>${t(
+              "modals.jsUsageStep2"
+            )}<br/><code style="background: #f0f0f0; padding: 4px 8px; border-radius: 3px; font-family: Monaco, monospace; display: inline-block; margin-top: 6px;">&lt;script src="${filename}.js"&gt;&lt;/script&gt;</code></li>
+            <li>${t(
+              "modals.jsUsageStep3"
+            )}<br/><code style="background: #f0f0f0; padding: 4px 8px; border-radius: 3px; font-family: Monaco, monospace; display: inline-block; margin-top: 6px;">echarts.init(dom, '${filename}')</code></li>
           </ol>
-          <p style="margin: 0; color: #666; font-size: 14px; line-height: 1; background: #f8f9fa; padding: 10px; border-radius: 4px; border-left: 3px solid var(--van-primary-color);">${t('modals.jsUsageTip')}</p>
+          <p style="margin: 0; color: #666; font-size: 14px; line-height: 1; background: #f8f9fa; padding: 10px; border-radius: 4px; border-left: 3px solid var(--van-primary-color);">${t(
+            "modals.jsUsageTip"
+          )}</p>
         </div>`,
       allowHtml: true,
-      confirmButtonText: t('common.ok'),
-      closeOnClickOverlay: true
-    })
+      confirmButtonText: t("common.ok"),
+      closeOnClickOverlay: true,
+    });
   } else {
     showDialog({
-      title: t('modals.jsonUsageTitle'),
+      title: t("modals.jsonUsageTitle"),
       message: `<div style="text-align: left; padding: 5px 0;">
           <ol style="margin: 0; line-height: 1; list-style: inside decimal;">
-            <li>${t('modals.jsonUsageStep1').replace('__filename__', `<code style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-family: Monaco, monospace;">${filename}.json</code>`)}</li>
-            <li>${t('modals.jsonUsageStep2')}<br/><code style="background: #f0f0f0; padding: 4px 8px; border-radius: 3px; font-family: Monaco, monospace; display: inline-block; margin-top: 6px;">const obj = JSON.parse(data)</code></li>
-            <li>${t('modals.jsonUsageStep3')}<br/><code style="background: #f0f0f0; padding: 4px 8px; border-radius: 3px; font-family: Monaco, monospace; display: inline-block; margin-top: 6px;">echarts.registerTheme('${filename}', obj)</code></li>
-            <li>${t('modals.jsonUsageStep4')}<br/><code style="background: #f0f0f0; padding: 4px 8px; border-radius: 3px; font-family: Monaco, monospace; display: inline-block; margin-top: 6px;">echarts.init(dom, '${filename}')</code></li>
+            <li>${t("modals.jsonUsageStep1").replace(
+              "__filename__",
+              `<code style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-family: Monaco, monospace;">${filename}.json</code>`
+            )}</li>
+            <li>${t(
+              "modals.jsonUsageStep2"
+            )}<br/><code style="background: #f0f0f0; padding: 4px 8px; border-radius: 3px; font-family: Monaco, monospace; display: inline-block; margin-top: 6px;">const obj = JSON.parse(data)</code></li>
+            <li>${t(
+              "modals.jsonUsageStep3"
+            )}<br/><code style="background: #f0f0f0; padding: 4px 8px; border-radius: 3px; font-family: Monaco, monospace; display: inline-block; margin-top: 6px;">echarts.registerTheme('${filename}', obj)</code></li>
+            <li>${t(
+              "modals.jsonUsageStep4"
+            )}<br/><code style="background: #f0f0f0; padding: 4px 8px; border-radius: 3px; font-family: Monaco, monospace; display: inline-block; margin-top: 6px;">echarts.init(dom, '${filename}')</code></li>
           </ol>
-          <p style="margin: 0; color: #666; font-size: 14px; line-height: 1; background: #f8f9fa; padding: 10px; border-radius: 4px; border-left: 3px solid var(--van-primary-color);">${t('modals.jsonUsageTip')}</p>
+          <p style="margin: 0; color: #666; font-size: 14px; line-height: 1; background: #f8f9fa; padding: 10px; border-radius: 4px; border-left: 3px solid var(--van-primary-color);">${t(
+            "modals.jsonUsageTip"
+          )}</p>
         </div>`,
       allowHtml: true,
-      confirmButtonText: t('common.ok'),
-      closeOnClickOverlay: true
-    })
+      confirmButtonText: t("common.ok"),
+      closeOnClickOverlay: true,
+    });
   }
-}
+};
 
 const importConfig = () => {
-  importFileInputRef.value?.click()
-}
+  importFileInputRef.value?.click();
+};
 
 const exportConfig = async () => {
   try {
-    const configData = themeStore.getThemeConfigForDownload()
-    const filename = `${themeName.value && echarts.format.encodeHTML(themeName.value) || 'customized'}.project`
+    const configData = themeStore.getThemeConfigForDownload();
+    const filename = `${
+      (themeName.value && echarts.format.encodeHTML(themeName.value)) ||
+      "customized"
+    }.project`;
 
-    downloadJsonFile(configData, filename)
+    downloadJsonFile(configData, filename);
 
     showToast({
-      message: t('modals.exportSuccess'),
-      type: 'success'
-    })
+      message: t("modals.exportSuccess"),
+      type: "success",
+    });
   } catch (error) {
-    console.error('Export failed:', error)
+    console.error("Export failed:", error);
     showToast({
-      message: t('modals.exportFailed'),
-      type: 'fail'
-    })
+      message: t("modals.exportFailed"),
+      type: "fail",
+    });
   }
-}
+};
 
 const refreshCharts = () => {
   if (props.chartPreviewRef?.updateCharts) {
-    props.chartPreviewRef.updateCharts()
+    props.chartPreviewRef.updateCharts();
     showToast({
-      message: t('modals.chartsRefreshed'),
-      type: 'success'
-    })
+      message: t("modals.chartsRefreshed"),
+      type: "success",
+    });
   }
-}
+};
 
 const resetTheme = async () => {
   try {
     await showDialog({
-      title: t('common.reset'),
-      message: t('modals.resetConfirm'),
-    })
+      title: t("common.reset"),
+      message: t("modals.resetConfirm"),
+    });
 
-    themeStore.resetTheme()
+    themeStore.resetTheme();
     showToast({
-      message: t('modals.themeReset'),
-      type: 'success'
-    })
+      message: t("modals.themeReset"),
+      type: "success",
+    });
   } catch {
     // User cancelled
   }
-}
+};
 
 const showHelp = () => {
   showDialog({
-    title: t('modals.helpTitle'),
+    title: t("modals.helpTitle"),
     message: `<div class="modal-body">
-            <h4>${t('modals.helpContent.whatIs')}</h4>
-            <p>${t('modals.helpContent.whatIsDesc1')}</p>
-            <p>${t('modals.helpContent.whatIsDesc2')}</p>
-            <p>${t('modals.helpContent.whatIsDesc3')}</p>
+            <h4>${t("modals.helpContent.whatIs")}</h4>
+            <p>${t("modals.helpContent.whatIsDesc1")}</p>
+            <p>${t("modals.helpContent.whatIsDesc2")}</p>
+            <p>${t("modals.helpContent.whatIsDesc3")}</p>
 
-            <h4>${t('modals.helpContent.importExport')}</h4>
-            <p>${t('modals.helpContent.importExportDesc')}</p>
+            <h4>${t("modals.helpContent.importExport")}</h4>
+            <p>${t("modals.helpContent.importExportDesc")}</p>
           </div>`,
     allowHtml: true,
-    confirmButtonText: t('common.gotIt')
-  })
-}
+    confirmButtonText: t("common.gotIt"),
+  });
+};
 
 const openSourceCode = () => {
-  window.open('https://github.com/apache/echarts-theme-builder', '_blank', 'noopener,noreferrer')
-}
+  window.open(
+    "https://github.com/apache/echarts-theme-builder",
+    "_blank",
+    "noopener,noreferrer"
+  );
+};
 
 const selectPreDefinedTheme = async (index: number) => {
   if (themeStore.activePreDefinedThemeIndex.value === index) {
     // Already selected
-    return
+    return;
   }
   try {
-    await themeStore.loadPreDefinedTheme(index)
+    await themeStore.loadPreDefinedTheme(index);
 
     // Manually trigger chart update
     if (props.chartPreviewRef?.updateCharts) {
-      props.chartPreviewRef.updateCharts()
+      props.chartPreviewRef.updateCharts();
     }
   } catch (error) {
-    console.error('Error selecting predefined theme:', error)
+    console.error("Error selecting predefined theme:", error);
   }
-}
+};
 
 const onAxisSettingChange = () => {
-  themeStore.updateAxisSetting()
-}
+  themeStore.updateAxisSetting();
+};
 
 const handleFileImport = async (event: Event) => {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
 
-  if (!file) return
+  if (!file) return;
 
   // Check file extension
-  const extension = file.name.slice(file.name.lastIndexOf('.'))
-  if (extension !== '.json') {
+  const extension = file.name.slice(file.name.lastIndexOf("."));
+  if (extension !== ".json") {
     showToast({
-      message: t('modals.selectJsonFile'),
-      type: 'fail'
-    })
-    target.value = ''
-    return
+      message: t("modals.selectJsonFile"),
+      type: "fail",
+    });
+    target.value = "";
+    return;
   }
 
   try {
-    const reader = new FileReader()
+    const reader = new FileReader();
     reader.onload = async (e) => {
       try {
-        const result = e.target?.result as string
-        const data = JSON.parse(result)
+        const result = e.target?.result as string;
+        const data = JSON.parse(result);
 
         // Validate imported data
         if (!data.themeName && !data.version && !data.theme) {
           showToast({
-            message: t('modals.useExportedFile'),
-            type: 'fail'
-          })
-          return
+            message: t("modals.useExportedFile"),
+            type: "fail",
+          });
+          return;
         }
 
         // Check version compatibility
         if (data.version && data.version < 1) {
           try {
             await showDialog({
-              title: t('modals.importThemeTitle'),
-              message: t('modals.oldVersionPrompt'),
-            })
+              title: t("modals.importThemeTitle"),
+              message: t("modals.oldVersionPrompt"),
+            });
           } catch {
-            return // User cancelled
+            return; // User cancelled
           }
         }
 
-        themeStore.importTheme(result)
+        themeStore.importTheme(result);
 
         // Update charts if reference is available
         if (props.chartPreviewRef?.updateCharts) {
-          props.chartPreviewRef.updateCharts()
+          props.chartPreviewRef.updateCharts();
         }
 
         showToast({
-          message: t('modals.importSuccess'),
-          type: 'success'
-        })
+          message: t("modals.importSuccess"),
+          type: "success",
+        });
       } catch (error) {
-        console.error('Import error:', error)
+        console.error("Import error:", error);
         showToast({
-          message: t('modals.invalidFormat'),
-          type: 'fail'
-        })
+          message: t("modals.invalidFormat"),
+          type: "fail",
+        });
       }
-    }
+    };
 
     reader.onerror = () => {
       showToast({
-        message: t('modals.fileReadFailed'),
-        type: 'fail'
-      })
-    }
+        message: t("modals.fileReadFailed"),
+        type: "fail",
+      });
+    };
 
-    reader.readAsText(file)
+    reader.readAsText(file);
   } catch (error) {
-    console.error('File import failed:', error)
+    console.error("File import failed:", error);
     showToast({
-      message: t('modals.fileReadFailed'),
-      type: 'fail'
-    })
+      message: t("modals.fileReadFailed"),
+      type: "fail",
+    });
   }
 
   // Clear input
-  target.value = ''
-}
+  target.value = "";
+};
 
 const handleImageUpload = async (event: Event) => {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
-  if (!file) return
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (!file) return;
 
   const loader = showLoadingToast({
-    message: t('modals.extractingColors'),
+    message: t("modals.extractingColors"),
     duration: 0,
     forbidClick: true,
-    loadingType: 'spinner',
-    wordBreak: 'break-word',
-    className: 'ec-loading-toast'
-  })
+    loadingType: "spinner",
+    wordBreak: "break-word",
+    className: "ec-loading-toast",
+  });
 
   let imgURL: string | undefined;
   try {
-    imgURL = URL.createObjectURL(file)
+    imgURL = URL.createObjectURL(file);
 
-    const img = new Image()
-    img.src = imgURL
+    const img = new Image();
+    img.src = imgURL;
 
     await new Promise((resolve, reject) => {
-      img.onload = resolve
+      img.onload = resolve;
       img.onerror = (e) => {
-        console.error('Failed to load image')
-        reject(e)
-      }
-    })
+        console.error("Failed to load image");
+        reject(e);
+      };
+    });
 
-    const colorThief = new ColorThief()
-    const colors = colorThief.getPalette(img, 10, 1).map(
-      (rgb) => `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`
-    )
+    const colorThief = new ColorThief();
+    const colors = colorThief
+      .getPalette(img, 10, 1)
+      .map((rgb) => `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`);
 
-    loader.close()
+    loader.close();
 
-    themeName.value = 'image-based'
-    theme.color = colors
+    themeName.value = "image-based";
+    theme.color = colors;
     // PENDING
-    theme.visualMapColor = colors.slice(0, 2)
+    theme.visualMapColor = colors.slice(0, 2);
 
-    props.chartPreviewRef?.updateCharts()
+    props.chartPreviewRef?.updateCharts();
 
-    themeStore.activePreDefinedThemeIndex.value = null
+    themeStore.activePreDefinedThemeIndex.value = null;
   } catch (e) {
-    console.error('Failed to extract image color:', e)
+    console.error("Failed to extract image color:", e);
     showToast({
-      message: t('modals.extractColorFailed'),
-      type: 'fail'
-    })
+      message: t("modals.extractColorFailed"),
+      type: "fail",
+    });
   } finally {
-    imgURL && URL.revokeObjectURL(imgURL)
-    target.value = ''
+    imgURL && URL.revokeObjectURL(imgURL);
+    target.value = "";
   }
-}
+};
 </script>
 
 <style scoped>
