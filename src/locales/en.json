@@ -64,10 +64,8 @@
     "top": "Top",
     "bottom": "Bottom"
   },
-  "legend": {
-  },
-  "grid": {
-  },
+  "legend": {},
+  "grid": {},
   "tooltip": {
     "axisPointer": "Axis Pointer",
     "axisPointerWidth": "Width"
@@ -80,7 +78,28 @@
     "all": "All Axes"
   },
   "preview": {
-    "chartPreview": "Chart Preview"
+    "chartPreview": "Chart Preview",
+    "type": "Type",
+    "xAxis": "X-Axis",
+    "filter": "Filter",
+    "granularity": "Granularity",
+    "series": "Series",
+    "import": "Import",
+    "paste": "Paste",
+    "demo": "Demo",
+    "data": "Data",
+    "raw": "Raw (Original)",
+    "hour": "Hour (Avg)",
+    "day": "Day (Avg)",
+    "month": "Month (Avg)",
+    "year": "Year (Avg)",
+    "noData": "No Data",
+    "startPreviewTitle": "Please import or paste CSV data",
+    "startPreviewDesc": "Import or paste CSV data to start previewing",
+    "toolboxSaveAsImage": "Save Image",
+    "toolboxDataZoom": "Zoom",
+    "toolboxDataZoomBack": "Reset Zoom",
+    "toolboxRestore": "Restore"
   },
   "language": {
     "title": "Language",

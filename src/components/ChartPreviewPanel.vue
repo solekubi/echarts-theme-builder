@@ -25,7 +25,7 @@
           plain
           type="primary"
           @click="triggerFileUpload"
-          >导入/Import</van-button
+          >{{ $t("preview.import") }}</van-button
         >
         <van-button
           size="small"
@@ -33,7 +33,7 @@
           plain
           type="primary"
           @click="showPasteDialog = true"
-          >粘贴/Paste</van-button
+          >{{ $t("preview.paste") }}</van-button
         >
         <van-button
           size="small"
@@ -41,7 +41,7 @@
           plain
           type="success"
           @click="loadDemo"
-          >示例/Demo</van-button
+          >{{ $t("preview.demo") }}</van-button
         >
         <van-button
           size="small"
@@ -49,7 +49,7 @@
           @click="showDataDialog = true"
           :disabled="!hasData"
         >
-          数据/Data
+          {{ $t("preview.data") }}
         </van-button>
 
         <!-- Language Switcher: Reverted to RadioGroup style -->
@@ -70,7 +70,7 @@
     <div class="settings-bar" v-if="hasData">
       <!-- Chart Type -->
       <div class="setting-item">
-        <span class="setting-label">Type</span>
+        <span class="setting-label">{{ $t("preview.type") }}</span>
         <van-radio-group
           v-model="dataStore.chartType.value"
           direction="horizontal"
@@ -87,7 +87,7 @@
 
       <!-- X-Axis -->
       <div class="setting-item" v-if="dataStore.chartType.value !== 'pie'">
-        <span class="setting-label">X-Axis</span>
+        <span class="setting-label">{{ $t("preview.xAxis") }}</span>
         <select v-model="dataStore.xAxisField.value" class="native-select">
           <option v-for="h in dataStore.headers.value" :key="h" :value="h">
             {{ h }}
@@ -101,7 +101,7 @@
 
         <!-- Date Range Filter -->
         <div class="setting-item">
-          <span class="setting-label">Filter</span>
+          <span class="setting-label">{{ $t("preview.filter") }}</span>
           <div class="date-inputs">
             <input
               type="date"
@@ -127,13 +127,13 @@
 
         <!-- Granularity -->
         <div class="setting-item">
-          <span class="setting-label">Granularity</span>
+          <span class="setting-label">{{ $t("preview.granularity") }}</span>
           <select v-model="granularity" class="native-select">
-            <option value="raw">Raw (Original)</option>
-            <option value="hour">Hour (Avg)</option>
-            <option value="day">Day (Avg)</option>
-            <option value="month">Month (Avg)</option>
-            <option value="year">Year (Avg)</option>
+            <option value="raw">{{ $t("preview.raw") }}</option>
+            <option value="hour">{{ $t("preview.hour") }}</option>
+            <option value="day">{{ $t("preview.day") }}</option>
+            <option value="month">{{ $t("preview.month") }}</option>
+            <option value="year">{{ $t("preview.year") }}</option>
           </select>
         </div>
       </template>
@@ -142,7 +142,7 @@
 
       <!-- Series Config -->
       <div class="setting-item series-setting">
-        <span class="setting-label">Series</span>
+        <span class="setting-label">{{ $t("preview.series") }}</span>
         <div class="series-tags">
           <div
             v-for="h in availableSeriesFields"
@@ -250,7 +250,7 @@ import { useLocalization } from "../composables/useLocalization";
 // Store interaction
 const themeStore = useThemeStore();
 const dataStore = useGlobalDataStore();
-const { locale, availableLanguages } = useLocalization();
+const { locale, availableLanguages, t } = useLocalization();
 
 // UI State
 const activeNames = ref(["data"]);
@@ -492,12 +492,15 @@ const getChartOption = () => {
       top: 10,
       feature: {
         saveAsImage: {
-          title: "导出图片 / Save Image",
+          title: t("preview.toolboxSaveAsImage"),
         },
         dataZoom: {
-          title: { zoom: "区域缩放", back: "还原" },
+          title: {
+            zoom: t("preview.toolboxDataZoom"),
+            back: t("preview.toolboxDataZoomBack"),
+          },
         },
-        restore: { title: "还原 / Reset" },
+        restore: { title: t("preview.toolboxRestore") },
       },
     },
     legend: {

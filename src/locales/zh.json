@@ -64,10 +64,8 @@
     "top": "上",
     "bottom": "下"
   },
-  "legend": {
-  },
-  "grid": {
-  },
+  "legend": {},
+  "grid": {},
   "tooltip": {
     "axisPointer": "指示线",
     "axisPointerWidth": "宽度"
@@ -80,7 +78,28 @@
     "all": "所有坐标轴"
   },
   "preview": {
-    "chartPreview": "图表预览"
+    "chartPreview": "图表预览",
+    "type": "图表类型",
+    "xAxis": "X轴字段",
+    "filter": "日期筛选",
+    "granularity": "时间粒度",
+    "series": "数据系列",
+    "import": "导入 / Import",
+    "paste": "粘贴 / Paste",
+    "demo": "示例 / Demo",
+    "data": "数据 / Data",
+    "raw": "原始数据",
+    "hour": "小时 (平均)",
+    "day": "天 (平均)",
+    "month": "月 (平均)",
+    "year": "年 (平均)",
+    "noData": "暂无数据",
+    "startPreviewTitle": "请导入或粘贴 CSV 数据",
+    "startPreviewDesc": "导入或粘贴 CSV 数据以开始预览",
+    "toolboxSaveAsImage": "保存图片",
+    "toolboxDataZoom": "区域缩放",
+    "toolboxDataZoomBack": "还原缩放",
+    "toolboxRestore": "重置"
   },
   "language": {
     "title": "语言",
