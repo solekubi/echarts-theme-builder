@@ -102,29 +102,25 @@
         <!-- Date Range Filter -->
         <div class="setting-item">
           <span class="setting-label">Filter</span>
-          <div class="date-trigger" @click="showDateRangePicker = true">
-            <van-icon name="calendar-o" />
-            <span>{{ dateRangeText }}</span>
-            <van-icon
-              name="arrow-down"
-              v-if="!dateRangeState.selectedStart"
-              style="opacity: 0.5; font-size: 10px; margin-left: 4px"
+          <div class="date-inputs">
+            <input
+              type="date"
+              v-model="dateInputState.start"
+              class="date-input native-input"
+            />
+            <span class="date-separator">-</span>
+            <input
+              type="date"
+              v-model="dateInputState.end"
+              class="date-input native-input"
             />
             <van-icon
               name="clear"
-              v-else
-              @click.stop="resetDateFilter"
-              style="opacity: 0.5; margin-left: 4px"
+              v-if="dateInputState.start || dateInputState.end"
+              @click="resetDateInputs"
+              class="clear-icon"
             />
           </div>
-          <van-calendar
-            v-model:show="showDateRangePicker"
-            type="range"
-            :min-date="dateRangeState.minDate"
-            :max-date="dateRangeState.maxDate"
-            color="#1989fa"
-            @confirm="onDateRangeConfirm"
-          />
         </div>
 
         <van-divider vertical />
@@ -268,23 +264,11 @@ const chartTitle = ref("Chart Title");
 
 // Filter & Granularity State
 const granularity = ref("raw"); // raw, hour, day, month, year
-const showDateRangePicker = ref(false);
-const dateRangeState = reactive({
-  minDate: new Date(2010, 0, 1),
-  maxDate: new Date(2030, 11, 31),
-  selectedStart: null as Date | null,
-  selectedEnd: null as Date | null,
-});
 
-const dateRangeText = computed(() => {
-  if (dateRangeState.selectedStart && dateRangeState.selectedEnd) {
-    const format = (d: Date) =>
-      `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
-    return `${format(dateRangeState.selectedStart)} - ${format(
-      dateRangeState.selectedEnd
-    )}`;
-  }
-  return "All Time";
+// Date Input State (Strings YYYY-MM-DD for input type="date")
+const dateInputState = reactive({
+  start: "",
+  end: "",
 });
 
 // Methods
@@ -336,16 +320,21 @@ const processedData = computed(() => {
   const xField = dataStore.xAxisField.value;
 
   // 1. Filter by Date Range
-  if (
-    isTimeAxis.value &&
-    dateRangeState.selectedStart &&
-    dateRangeState.selectedEnd
-  ) {
-    const start = dateRangeState.selectedStart.getTime();
-    const end = dateRangeState.selectedEnd.getTime();
+  if (isTimeAxis.value && (dateInputState.start || dateInputState.end)) {
+    // Parse string dates to timestamps
+    // Start date is at 00:00:00
+    const startTs = dateInputState.start
+      ? new Date(dateInputState.start + "T00:00:00").getTime()
+      : -Infinity;
+
+    // End date is at 23:59:59.999
+    const endTs = dateInputState.end
+      ? new Date(dateInputState.end + "T23:59:59.999").getTime()
+      : Infinity;
+
     data = data.filter((r) => {
       const t = new Date(r[xField]).getTime();
-      return t >= start && t <= end;
+      return t >= startTs && t <= endTs;
     });
   }
 
@@ -415,39 +404,35 @@ const handleDataLoad = () => {
   showPasteDialog.value = false; // Close dialog if open
 
   // Reset filters
-  dateRangeState.selectedStart = null;
-  dateRangeState.selectedEnd = null;
+  dateInputState.start = "";
+  dateInputState.end = "";
   granularity.value = "raw";
 
   // Set default title
   chartTitle.value = "Chart Title";
 
-  // Init date picker range
+  // Auto-set date range if data exists
   if (isTimeAxis.value && dataStore.parsedData.value.length > 0) {
     const xField = dataStore.xAxisField.value;
     const dates = dataStore.parsedData.value
       .map((r) => new Date(r[xField]).getTime())
       .filter((t) => !isNaN(t))
       .sort((a, b) => a - b);
+
     if (dates.length > 0) {
-      dateRangeState.minDate = new Date(dates[0]);
-      dateRangeState.maxDate = new Date(dates[dates.length - 1]);
+      const min = new Date(dates[0]);
+      const max = new Date(dates[dates.length - 1]);
+      // Format to YYYY-MM-DD
+      const toIsoDate = (d: Date) => d.toISOString().split("T")[0];
+      dateInputState.start = toIsoDate(min);
+      dateInputState.end = toIsoDate(max);
     }
   }
 };
 
-const onDateRangeConfirm = (values: Date[]) => {
-  const [start, end] = values;
-  dateRangeState.selectedStart = start;
-  dateRangeState.selectedEnd = end;
-  showDateRangePicker.value = false;
-  // watcher will handle update
-};
-
-const resetDateFilter = () => {
-  dateRangeState.selectedStart = null;
-  dateRangeState.selectedEnd = null;
-  // watcher will handle update
+const resetDateInputs = () => {
+  dateInputState.start = "";
+  dateInputState.end = "";
 };
 
 const isSeriesSelected = (field: string) => {
@@ -501,6 +486,19 @@ const getChartOption = () => {
     tooltip: {
       trigger: isPie ? "item" : "axis",
       axisPointer: { type: "shadow" }, // Better for mixed charts
+    },
+    toolbox: {
+      right: 20,
+      top: 10,
+      feature: {
+        saveAsImage: {
+          title: "导出图片 / Save Image",
+        },
+        dataZoom: {
+          title: { zoom: "区域缩放", back: "还原" },
+        },
+        restore: { title: "还原 / Reset" },
+      },
     },
     legend: {
       top: 45,
@@ -590,6 +588,7 @@ const updateChart = () => {
   const themeId = "customized";
   echarts.registerTheme(themeId, currentTheme);
 
+  // LOCALE UPDATE: ensure chart locale matches
   const chartLocale = locale.value === "zh" ? "ZH" : "EN";
 
   chartInstance = markRaw(
@@ -640,8 +639,9 @@ watch(
     dataStore.xAxisField,
     dataStore.seriesConfigs,
     granularity, // Watch granularity for immediate chart update
-    () => dateRangeState.selectedStart, // Watch date range for immediate chart update
-    () => dateRangeState.selectedEnd, // Watch date range for immediate chart update
+    () => dateInputState.start,
+    () => dateInputState.end,
+    locale, // Watch locale for immediate chart update
   ],
   debouncedUpdate,
   { deep: true }
@@ -789,23 +789,38 @@ watch(chartTitle, debouncedUpdate);
   background: rgba(255, 255, 255, 0.4);
 }
 
-.date-trigger {
+/* Date Inputs */
+.date-inputs {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 8px;
+  background: #fff;
   border: 1px solid #dcdee0;
   border-radius: 4px;
-  background-color: #fff;
-  font-size: 13px;
-  color: #323233;
-  cursor: pointer;
-  min-width: 120px;
-  justify-content: space-between;
+  padding: 2px 6px;
 }
 
-.date-trigger:hover {
-  border-color: var(--van-primary-color);
+.date-input {
+  border: none;
+  font-size: 13px;
+  color: #323233;
+  outline: none;
+  background: transparent;
+  width: 110px; /* Force width */
+}
+
+.date-separator {
+  color: #969799;
+}
+
+.clear-icon {
+  font-size: 14px;
+  color: #969799;
+  cursor: pointer;
+}
+
+.clear-icon:hover {
+  color: #323233;
 }
 
 .lang-switcher {

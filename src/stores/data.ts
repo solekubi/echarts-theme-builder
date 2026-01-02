@@ -27,8 +27,8 @@ export const useDataStore = () => {
         const headers = ['Time', 'Temperature', 'Humidity']
         const rows = []
 
-        // Start from 2024-01-01
-        const startTime = new Date('2024-01-01T00:00:00').getTime()
+        // Start from 2026-01-01
+        const startTime = new Date('2026-01-01T00:00:00').getTime()
         const oneYearHours = 365 * 24
 
         for (let i = 0; i < oneYearHours; i++) {
