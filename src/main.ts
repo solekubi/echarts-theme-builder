@@ -11,7 +11,11 @@ import {
   Icon,
   Checkbox,
   RadioGroup,
-  Radio
+  Radio,
+  Divider,
+  Switch,
+  Cell,
+  Dialog
 } from 'vant'
 import App from './App.vue'
 import i18n from './i18n'
@@ -27,5 +31,10 @@ app.use(Button)
 app.use(Icon)
 app.use(Checkbox)
 app.use(RadioGroup)
+app.use(RadioGroup)
 app.use(Radio)
+app.use(Divider)
+app.use(Switch)
+app.use(Cell)
+app.use(Dialog)
 app.mount('#theme-builder-app')
