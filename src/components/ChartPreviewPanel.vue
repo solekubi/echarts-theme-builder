@@ -194,7 +194,19 @@
         >
       </div>
       <div v-else class="chart-card">
-        <div ref="chartDom" class="chart-render-area"></div>
+        <div
+          ref="chartDom"
+          class="chart-render-area"
+          :style="{
+            width: /^\d+$/.test(themeStore.chartDisplay.width.toString())
+              ? themeStore.chartDisplay.width + 'px'
+              : themeStore.chartDisplay.width,
+            height: /^\d+$/.test(themeStore.chartDisplay.height.toString())
+              ? themeStore.chartDisplay.height + 'px'
+              : themeStore.chartDisplay.height,
+            margin: '0 auto',
+          }"
+        ></div>
       </div>
     </div>
 
@@ -257,6 +269,7 @@ import {
   markRaw,
   computed,
   reactive,
+  nextTick,
 } from "vue";
 import * as echarts from "echarts";
 import { useThemeStore } from "../stores/theme";
@@ -798,6 +811,19 @@ watch(
 
 // Watch theme changes (The parent usually calls updateCharts, but we watch just in case)
 watch(() => themeStore.theme, debouncedUpdate, { deep: true });
+
+// Watch chart display changes (dimensions/background)
+watch(
+  () => themeStore.chartDisplay,
+  () => {
+    // Need to wait for DOM to update with new inline styles
+    nextTick(() => {
+      handleResize();
+      debouncedUpdate();
+    });
+  },
+  { deep: true }
+);
 
 // Watch title for real-time updates
 watch(chartTitle, debouncedUpdate);

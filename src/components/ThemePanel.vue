@@ -109,6 +109,16 @@
             v-model="theme.subtitleColor"
             :label="$t('colors.subtitle')"
           />
+          <van-field
+            v-model="chartDisplay.width"
+            :label="$t('panel.chartWidth')"
+            placeholder="e.g. 100%, 800"
+          />
+          <van-field
+            v-model="chartDisplay.height"
+            :label="$t('panel.chartHeight')"
+            placeholder="e.g. 100%,400"
+          />
           <ColorList v-model="theme.color" :label="$t('colors.theme')" />
           <ColorPicker
             v-model="theme.markTextColor"
@@ -535,7 +545,7 @@ const uploadImageInputRef = useTemplateRef("uploadImageInput");
 
 // Theme store
 const themeStore = useThemeStore();
-const { theme, themeName } = themeStore;
+const { theme, themeName, chartDisplay } = themeStore;
 
 // Predefined themes
 const preDefinedThemes = PRE_DEFINED_THEMES;

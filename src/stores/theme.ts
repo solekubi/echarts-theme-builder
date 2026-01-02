@@ -225,7 +225,9 @@ const createThemeStore = () => {
   const themeName = ref('customized')
   const chartDisplay = reactive({
     background: '#fff',
-    title: '#000'
+    title: '#000',
+    width: '100%',
+    height: '100%'
   })
 
   const resetTheme = () => {

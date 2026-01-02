@@ -113,4 +113,6 @@ export interface PreDefinedTheme {
 export interface ChartDisplay {
   background: string
   title: string
+  width: number | string
+  height: number | string
 }

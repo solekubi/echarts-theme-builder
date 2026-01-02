@@ -38,7 +38,9 @@
     "preDefinedThemes": "Predefined Themes",
     "separateAxisSetting": "Configure different axis types separately",
     "extractFromImage": "From Image",
-    "extractFromImageTitle": "Extract theme colors from an image"
+    "extractFromImageTitle": "Extract theme colors from an image",
+    "chartWidth": "Canvas Width",
+    "chartHeight": "Canvas Height"
   },
   "colors": {
     "background": "Background",
